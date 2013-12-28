@@ -1,17 +1,13 @@
-BlenderSCAD
+BlenderSCAD - bridging the gap between Blender and OpenSCAD
 ===========
 
-OpenSCAD-ify Blender
-
-<h1>BlenderSCAD - bridging the gap between Blender and OpenSCAD</h1>
-
-Blender is a powerful piece of Open Source software which is also useful for 3D printing space.
-Coming from OpenSCAD or Tinkercad, there are some features lacking at the first glance:
+Blender is a powerful piece of Open Source software which is also useful in the 3D printing space.
+Coming from OpenSCAD or Tinkercad, there are some issues at the first glance:
 
 <ul>
 <li>Revisiting and changing a model seems to be difficult - Joining meshes is less attractive than grouping/ungrouping objects
 <li>Undo functionality is not that advanced.
-<li>The parametric approach of OpenSCAD is very powerful and yet easy to learn.
+<li>The parametric approach of OpenSCAD is very powerful and yet easy to learn. Blender's Python console is something you may not even be aware of.
 <li>Blender's UI is way too dark to provide this warm and welcome feeling of Tinkercad or OpenSCAD :-)
 </ul>
  
