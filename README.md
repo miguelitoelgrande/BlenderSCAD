@@ -73,7 +73,7 @@ Later versions will split this file into standard library functions and own defi
 For the moment, this is the easiest way. Can also be saved as part of a .blend file.
 Again, caution, the upper part of the script will first wipe all objects of the open scene.
 
-There are two ways to execute the script in Blender:
+<h3>There are two ways to execute the script in Blender:</h3>
 
 <h4>via Blender's built in text editor</h4>
 
