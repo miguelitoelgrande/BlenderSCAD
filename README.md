@@ -73,7 +73,7 @@ Later versions will split this file into standard library functions and own defi
 For the moment, this is the easiest way. Can also be saved as part of a .blend file.
 Again, caution, the upper part of the script will first wipe all objects of the open scene.
 
-<h3>There are two ways to execute the script in Blender:</h3>
+There are two ways to execute the script in Blender:
 
 <h4>via Blender's built in text editor</h4>
 
@@ -103,4 +103,34 @@ A last word of "warning": Blender files grow with all unlinked objects. It will 
 So, especially when you are using the mentioned "Live Edit" option, you may want to do this frequently. And also pay attention to where your source file is saved.
 <i>ALT+S</i> will save the file in the editor, <i>CTRL+S</i> will save the "materialized" version of that file inside blender. Changes may be lost if you resync.
 
+
+<h3>Supported so far</h3>
+<ul>
+<li>cube
+<li>cylinder
+<li>sphere
+<li>circle
+<li>
+<li>union
+<li>difference
+<li>intersection
+<li>
+<li>translate
+<li>rotate
+<li>scale
+<li>resize
+<li>
+<li>hull
+<li>*group
+<li>*round_edges
+<li>
+<li>import_stl
+<li>*export_stl
+<li>
+<li>hexagon
+<li>octagon
+<li>ellipsoid
+<li>rcube
+<li>roundedBox
+</ul>
 

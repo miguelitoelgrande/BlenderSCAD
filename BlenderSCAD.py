@@ -36,14 +36,9 @@ import bpy_types
 ## BlenderSCAD core functionality
 #################################################################   
 
+#default layers for all objects
 mylayers = [False]*20
 mylayers[0] = True
-
-#We create a reference to the operator that is used for creating a cube mesh primitive
-add_cube = bpy.ops.mesh.primitive_cube_add
-add_cylinder = bpy.ops.mesh.primitive_cylinder_add
-add_cone = bpy.ops.mesh.primitive_cone_add
-#translate = bpy.ops.transform.translate
 
 # need to setup our default material
 mat = bpy.data.materials.get('useObjectColor')
@@ -92,11 +87,20 @@ def clearAllObjects():
 # CAUTION! clear workspace 
 clearAllObjects()   
 
+
+# print all objects
+def listAllObjects():
+	for obj in bpy.data.objects:
+ 		print(obj.name)	
+
+
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def cube(size=(0.0,0.0,0.0), center=False):
+	add_cube = bpy.ops.mesh.primitive_cube_add
 	add_cube(location=(0.0,0.0,0.0), layers=mylayers)
-	o = bpy.data.objects['Cube']
+	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
+	o = bpy.context.active_object
 	o.dimensions=size
 	o.name='cu' # +str(index)
 	# simple color will only display via my def. Material setting
@@ -113,16 +117,20 @@ def cube(size=(0.0,0.0,0.0), center=False):
 # Construct a cylinder mesh
 # bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def _cylinder(h=1, r=1):
+	add_cylinder = bpy.ops.mesh.primitive_cylinder_add
 	add_cylinder(location=(0.0,0.0,0.0), radius=r , depth=h , vertices=64, layers=mylayers)  
-	o = bpy.data.objects['Cylinder']
+	#o = bpy.data.objects['Cylinder'] # not safe enough if an earlier object named 'Cylinder' exists...
+	o = bpy.context.active_object
 	o.name='cy' # +str(index)   
 	return o
 
 # Construct a conic mesh 
 #  bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=1.0, radius2=0.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def _cone(h=1, r1=1, r2=2):
+	add_cone = bpy.ops.mesh.primitive_cone_add
 	add_cone(location=(0.0,0.0,0.0), radius1=r1, radius2=r2, depth=h , vertices=64, layers=mylayers)
-	o = bpy.data.objects['Cone']
+	#o = bpy.data.objects['Cone'] # not safe enough if an earlier object named 'Cone' exists...
+	o = bpy.context.active_object
 	o.name='cn' # +str(index)
 	return o
 
@@ -146,7 +154,8 @@ def sphere(r=1, d=-1, center=true):
 	if d != -1 :
 		  r= d/2;
 	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=32, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
-	o = bpy.data.objects['Sphere']
+	#o = bpy.data.objects['Sphere'] # not safe enough if an earlier object named 'Sphere' exists...
+	o = bpy.context.active_object
 	o.name='sp' # +str(index)
 	# simple color will only display via my def. Material setting
 	o.data.materials.append(mat)
@@ -157,6 +166,58 @@ def sphere(r=1, d=-1, center=true):
 	#bpy.ops.object.transform_apply(scale=True)
 	return o
 
+# Construct a circle
+## OpenSCAD: circle(r = <val>);
+def circle(r=10.0 ):
+	precision = 32 # TODO
+    #  fill_type (enum in [‘NOTHING’, ‘NGON’, ‘TRIFAN’], (optional))
+	bpy.ops.mesh.primitive_circle_add(vertices=precision, radius=r, fill_type='NGON', location=(0.0,0.0,0.0), layers=mylayers)
+	#bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
+	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
+	o = bpy.context.active_object
+	o.name='ci' # +str(index)
+	return o
+
+
+# OpenSCAD: import_stl("filename.stl", convexity = <val>);
+# TODO: implement convexity...
+def import_stl(filename ,convexity=10):
+	bpy.ops.import_mesh.stl(filepath=filename)
+	o = bpy.context.active_object
+	return o
+
+#import_stl("O:/BlenderStuff/demo.stl")
+
+
+# extra function, not OpenSCAD
+# export object as STL.
+def export_stl(filename, o=None, ascii=False):
+	if o is None:
+		o = bpy.context.active_object
+	bpy.ops.export_mesh.stl(filepath=filename, ascii=ascii)
+	return o
+
+#export_stl("O:/BlenderStuff/demo.stl", cube([10,20,15]) )
+
+
+# OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
+# bpy.ops.mesh.spin(steps=9, dupli=False, angle=1.5708, center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 0.0))
+
+# WiP!! still buggy...
+def rotate_extrude(o=None):
+	if o is None:
+		o = bpy.context.object
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o.select = True
+	bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.spin()
+	bpy.ops.object.mode_set(mode = 'OBJECT')
+	return o
+
+#rotate_extrude( circle(15) )
+#circle(30)
+
+
 # OpenSCAD: translate(v = [x, y, z]) { ... }
 def translate( v=(0.0,0.0,0.0), o=None):
 	if o is None:
@@ -166,7 +227,7 @@ def translate( v=(0.0,0.0,0.0), o=None):
 	bpy.ops.transform.translate(value=v)
 	return o
 
-	
+		
 # OpenSCAD: rotate(a = deg, v = [x, y, z]) { ... }
 # Rotation in Blender: http:#pymove3d.sudile.com/stationen/kc_objekt_rotation/rotation.html#eulerrotation
 # todo: implement optional v?
@@ -208,34 +269,6 @@ def color( rgba=(1.0,1.0,1.0,1.0), o=None):
 	o.color = rgba
 	return o
 
-def booleanOp(obj_A,obj_B, boolOp='DIFFERENCE'):
-	scn = bpy.context.scene
-	#bpy.ops.object.select_all(action = 'DESELECT')
-	#obj_A.select = True
-	boo = obj_A.modifiers.new('MyBool', 'BOOLEAN')
-	boo.object = obj_B
-	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
-	# often forgotten: needs to be active!!
-	scn.objects.active = obj_A
-	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
-	obj_A.name = boolOp[0]+'('+obj_A.name+','+obj_B.name+')'   
-	scn = bpy.context.scene 
-	scn.objects.unlink(obj_B)
-	return obj_A
-
-def union(o1,*objs):
-	res = o1
-	for obj in objs:
-		if obj != None:
-			res = booleanOp(res,obj, boolOp='UNION')
-	return res
-		
-def difference(o1,o2,*objs):
-	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE')
-
-def intersection(o1,o2,*objs):
-	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT')
-
 #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
 #   Enclose selected vertices in a convex polyhedron   
 def hull(o1,*objs):
@@ -250,6 +283,7 @@ def hull(o1,*objs):
     o.name= "hull(" + o.name + ")"
     return o
 
+
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
@@ -258,10 +292,49 @@ def group(o1,*objs):
 	o1.select = True
 	bpy.context.scene.objects.active = o1   
 	for obj in objs:
-		if obj != None:
+		if obj != None:			
 			obj.select = True
+			obj.hide_select = True
 	bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)
+	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
+
+
+# TODO: apply=False will require a fix to allow for later scaling, etc.
+def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
+	scn = bpy.context.scene
+	#bpy.ops.object.select_all(action = 'DESELECT')
+	#obj_A.select = True
+	boo = objA.modifiers.new('MyBool', 'BOOLEAN')
+	boo.object = objB
+	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
+	# often forgotten: needs to be active!!
+	scn.objects.active = objA
+	objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
+	if apply is True:
+		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
+		scn = bpy.context.scene
+		scn.objects.unlink(objB)
+	else:
+		objB.hide_select = True
+		objB.hide = True
+	return objA
+
+
+def union(o1,*objs, apply=True):
+	res = o1
+	for obj in objs:
+		if obj != None:
+			res = booleanOp(res,obj, boolOp='UNION', apply=apply)
+	return res
+		
+def difference(o1,o2,*objs, apply=True):
+	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE', apply=apply)
+
+def intersection(o1,o2,*objs, apply=True):
+	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT', apply=apply)
+
+
 
 # an extra not present in OpenSCAD
 def round_edges(width=0.1, segments=32, angle_limit=30, apply=False ,o=None):
@@ -287,11 +360,12 @@ def round_edges(width=0.1, segments=32, angle_limit=30, apply=False ,o=None):
 # translated from "shapes.scad"
 ## size is the XY plane size, height in Z
 def hexagon(size, height):
-    boxWidth = size/1.75 
-    o = None   
-    for r in [-60, 0, 60]: 
+    boxWidth = size/1.75
+    o = None
+    for r in [-60, 0, 60]:
         tmp=rotate([0,0,r], cube([boxWidth, size, height], true))
         o=union(tmp,o) # trick to overcome OpenSCADs implicit union :-)
+    return o
 
 #hexagon(10,30)
 
@@ -420,7 +494,8 @@ def Demo2():
 	 )
 	)
 
-Demo2()
+#Demo2()
+
 
 # OpenJSCAD.org Logo :-)	  
 def Demo2b_tripleGrouping():  
@@ -599,10 +674,12 @@ def Test3():
 # HUGE todo: auto convert and exec .scad files :-)
 # from:
 # http://timhatch.com/projects/pybraces/#example
-current_depth = 0
-indent_width = 4
 
 def braces_decode(input, errors='strict'):  
+	##global indent_width, current_depth
+	current_depth = 0
+	indent_width = 4
+	#
 	if not input: return (u'', 0)
 	length = len(input)
 	# Deal with chunked reading, where we don't get
@@ -612,7 +689,6 @@ def braces_decode(input, errors='strict'):
 	input = input[:length]
 	#
 	acc = []
-	global indent_width, current_depth
 	lines = input.split('\n')
 	for l in [x.strip().replace('++', '+=1') for x in lines]:
 		if l.endswith(';'):
