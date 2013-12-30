@@ -182,6 +182,8 @@ def circle(r=10.0 ):
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
 	o.name='ci' # +str(index)
+	o.data.materials.append(mat)
+	o.color = defColor
 	return o
 
 
@@ -339,6 +341,7 @@ def intersection(o1,o2,*objs, apply=True):
 
 
 # OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
+# TODO: http://wiki.blender.org/index.php/Dev:2.5/Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
 def polygon(points, paths=[]):
 	# Create mesh and object
 	me = bpy.data.meshes.new('polyMesh')
@@ -369,8 +372,16 @@ def polygon(points, paths=[]):
 	me.from_pydata(verts, edges, [])
 	# Update mesh with new data
 	me.update(calc_edges=True)	
+	# add face...
 	bpy.context.scene.objects.active = o
 	o.select = True
+	o.data.materials.append(mat)
+	o.color = defColor
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')	
+	bpy.ops.mesh.edge_face_add()
+	bpy.ops.mesh.flip_normals()
+	bpy.ops.object.mode_set(mode = 'OBJECT')
 	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
 	#bpy.context.scene.cursor_location = (5,5,0)
 	#
@@ -380,15 +391,13 @@ def polygon(points, paths=[]):
 
 # some profile
 #polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )
-
 # OpenSCAD example: double Triangle, using two paths... 
-# TODO: fill polygon?
-# polygon(points=[[0,0],[10,0],[0,10],[1,1],[8,1],[1,8]], paths=[[0,1,2],[3,4,5]])
+#polygon(points=[[0,0],[10,0],[0,10],[1,1],[8,1],[1,8]], paths=[[0,1,2],[3,4,5]])
 
 #rotate([90,0,0],	 polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))
 
 # OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
-# Out of Order... next thing to fix.
+# TODO: only height supported for the moment...
 def linear_extrude(height, o=None):
 	if o is None:
 		o = bpy.context.object
@@ -396,32 +405,17 @@ def linear_extrude(height, o=None):
 	o.select = True
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
-	#prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
-	#bpy.context.area.type = 'VIEW_3D'
-	#print (bpy.ops.mesh.spin.poll())	
-    # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
-	bpy.ops.mesh.extrude(type='REGION')
+	bpy.ops.mesh.extrude_region_move(TRANSFORM_OT_translate={"value":(0.0,0.0,height)})
 	# bpy.ops.mesh.extrude_region_move(MESH_OT_extrude=None, TRANSFORM_OT_translate=None)
-	bpy.ops.mesh.extrude_region_move(RANSFORM_OT_translate=[0,0,height])
-	#bpy.context.area.type = prevAreaType  	# restore area / context
-	# delete original meshes... still selected.
-	#bpy.ops.mesh.delete(type='VERT')	
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')		
-	o.data.materials.append(mat)
-	o.color = defColor
-	o.name = 're('+o.name+')'	
-	# TODO: need to cleanup the result
-	mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
-	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')	
-	#hull(o)
+	#o.data.materials.append(mat)
+	#o.color = defColor
+	o.name = 'le('+o.name+')'	
 	return o
 
-#linear_extrude( 5, polygon(points=[[50,0],[0,50],[0,0] ]) )
-
-# triangel
-#polygon(points=[[50,0],[0,50],[0,0] ])
-
+#linear_extrude( 8, polygon(points=[[15,0],[0,15],[0,0] ]) )
+#linear_extrude( 5, circle(r=3) )
 
 
 # OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
@@ -451,13 +445,12 @@ def rotate_extrude(o=None):
 	o.name = 're('+o.name+')'	
 	# TODO: need to cleanup the result
 	mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
-	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')	
-	#hull(o)
+	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')
 	return o
 
 #rotate_extrude (polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
 #rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )))
-#rotate_extrude (circle(r=4))
+#rotate_extrude (translate([5,0,0] ,circle(r=4)))
 #rotate_extrude (translate([5,0,0],cube([10,10,5])))
 
 
