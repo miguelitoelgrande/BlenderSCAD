@@ -53,7 +53,7 @@ if mat is None:
 #constants
 true=True
 false=False
-pi = 3.141592
+#pi = math.pi #3.141592
 
 # some colors... 
 black = (0.00,0.00,0.00,0)
@@ -75,6 +75,9 @@ aqua = (0.00,1.00,1.00,0)
 
 # default color for object creators below...
 defColor = (1.0,1.0,0.1,0)
+
+# emulate OpenSCAD $fn
+fn=32  # default precision: every 10 degrees a segment..
 
 if bpy.context.active_object is not None:
 	if bpy.context.active_object.mode is not 'OBJECT': 
@@ -122,9 +125,10 @@ def cube(size=(0.0,0.0,0.0), center=False):
 
 # Construct a cylinder mesh
 # bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
-def _cylinder(h=1, r=1):
+def _cylinder(h=1, r=1, fn=-1):
+	segments = fn if fn != -1 else globals()["fn"]
 	add_cylinder = bpy.ops.mesh.primitive_cylinder_add
-	add_cylinder(location=(0.0,0.0,0.0), radius=r , depth=h , vertices=64, layers=mylayers)  
+	add_cylinder(location=(0.0,0.0,0.0), radius=r , depth=h , vertices=segments, layers=mylayers)  
 	#o = bpy.data.objects['Cylinder'] # not safe enough if an earlier object named 'Cylinder' exists...
 	o = bpy.context.active_object
 	o.name='cy' # +str(index)   
@@ -132,9 +136,9 @@ def _cylinder(h=1, r=1):
 
 # Construct a conic mesh 
 #  bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=1.0, radius2=0.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
-def _cone(h=1, r1=1, r2=2):
+def _cone(h=1, r1=1, r2=2, fn=-1):
 	add_cone = bpy.ops.mesh.primitive_cone_add
-	add_cone(location=(0.0,0.0,0.0), radius1=r1, radius2=r2, depth=h , vertices=64, layers=mylayers)
+	add_cone(location=(0.0,0.0,0.0), radius1=r1, radius2=r2, depth=h , vertices=segments, layers=mylayers)
 	#o = bpy.data.objects['Cone'] # not safe enough if an earlier object named 'Cone' exists...
 	o = bpy.context.active_object
 	o.name='cn' # +str(index)
@@ -142,11 +146,11 @@ def _cone(h=1, r1=1, r2=2):
 
 # OpenSCAD: cylinder(h = <height>, r1 = <bottomRadius>, r2 = <topRadius>, center = <boolean>);
 #	   cylinder(h = <height>, r = <radius>);
-def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False):
+def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False, fn=-1):
 	if r1 != -1 and r2 != -1 :
-		o =_cone(h,r1,r2)
+		o =_cone(h,r1,r2,fn=fn)
 	else:
-		o =_cylinder(h,r)
+		o =_cylinder(h,r,fn=fn)
 	# just a suitable default material and some default color
 	o.data.materials.append(mat)
 	o.color = defColor
@@ -154,13 +158,14 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False):
 		bpy.ops.transform.translate(value=(0,0,h/2))
 	return o
 
+
 # OpenSCAD: sphere(r=1, d=-1)   
 # bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, size=1.0, view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False,   
-def sphere(r=1, d=-1, center=true):
-	precision = 32 #int(2*pi*r) # number segments dependent on initial size - later scaling: bad luck :-) TODO: fn= fa= fs=
+def sphere(r=1, d=-1, center=true, fn=-1):
+	segments = fn if fn != -1 else globals()["fn"]
 	if d != -1 :
 		  r= d/2;
-	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=precision, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
+	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=segments, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Sphere'] # not safe enough if an earlier object named 'Sphere' exists...
 	o = bpy.context.active_object
 	o.name='sp' # +str(index)
@@ -175,13 +180,13 @@ def sphere(r=1, d=-1, center=true):
 
 # Construct a circle
 ## OpenSCAD: circle(r = <val>);
-def circle(r=10.0, fill=True ):
-	precision = 32 # TODO
+def circle(r=10.0, fill=False, fn=-1):
+	segments = fn if fn != -1 else globals()["fn"]  
 	if fill is False:    
 		fill_type = 'NOTHING'
 	else:
 		fill_type = 'NGON'	 #  fill_type (enum in [‘NOTHING’, ‘NGON’, ‘TRIFAN’], (optional))
-	bpy.ops.mesh.primitive_circle_add(vertices=precision, radius=r, fill_type=fill_type, location=(0.0,0.0,0.0), layers=mylayers)
+	bpy.ops.mesh.primitive_circle_add(vertices=segments, radius=r, fill_type=fill_type, location=(0.0,0.0,0.0), layers=mylayers)
 	#bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
@@ -189,7 +194,6 @@ def circle(r=10.0, fill=True ):
 	o.data.materials.append(mat)
 	o.color = defColor
 	return o
-
 
 # OpenSCAD: import_stl("filename.stl", convexity = <val>);
 # TODO: implement convexity...
@@ -347,7 +351,8 @@ def intersection(o1,o2,*objs, apply=True):
 
 # OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
 # TODO: http://wiki.blender.org/index.php/Dev:2.5/Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
-def polygon(points, paths=[]):
+# fill seems to cause probs with rotate_extrude in some cases. ->faces at start/end
+def polygon(points, paths=[], fill=False):
 	# Create mesh and object
 	me = bpy.data.meshes.new('polyMesh')
 	o = bpy.data.objects.new('poly', me)
@@ -395,10 +400,11 @@ def polygon(points, paths=[]):
 		bpy.ops.object.mode_set(mode = 'EDIT')	
 	for el in o.data.vertices: el.select = True
 	for el in o.data.edges: el.select = True
-	try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
-		bpy.ops.mesh.fill_grid()
-	except RuntimeError:
-		bpy.ops.mesh.fill() 	
+	if fill is True:
+		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
+			bpy.ops.mesh.fill_grid()
+		except RuntimeError:
+			bpy.ops.mesh.fill() 	
 	bpy.ops.mesh.flip_normals()
 	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -465,34 +471,37 @@ def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
 # This emulation would also swallow 3D objects ;-)
 # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
 # Wiki on Blender Spin: http://de.wikibooks.org/wiki/Blender_Dokumentation:_Spin_und_SpinDup
-def rotate_extrude(o=None):
-	precision = 32 #360 #* 0.10
+def rotate_extrude(o=None, fn=-1):	
+	segments = fn if fn != -1 else globals()["fn"]  
+	#print(segments)
 	if o is None:
 		o = bpy.context.object
 	bpy.context.scene.objects.active = o
 	o.select = True
-	#rotate([90,0,0],o) # emulating OpenSCAD: assumes 2D object in X-Y-Plane...
 	# therefore: X-Axis determines "radius" of the spin, but y will transform into height of resulting spin object
 	newz = o.location[1] # z-Offset of the final object...
-	o.location[1]=0
-	rotate([90,0,0],o )
+	o.location[1]=0.0
+	rotate([90,0,0],o ) # emulating OpenSCAD: assumes 2D object in X-Y-Plane...
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
 	prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
 	bpy.context.area.type = 'VIEW_3D' # probably: need to set cursor for Spin to be right...	
-	print(o.location)
+	#print(o.location)
 	bpy.context.scene.cursor_location = o.location
+	#o.location=(10,0,0)
 	bpy.ops.view3d.viewnumpad(type='TOP')
 	bpy.ops.view3d.snap_cursor_to_selected()
 	#print (bpy.ops.mesh.spin.poll())	
     # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
-	angle = 360 # ggrrr.. need to convert or debug for hours :-)
-	bpy.ops.mesh.spin(steps=precision, dupli=False, angle=(angle * pi / 180), center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0))
-	# delete original meshes... still selected.
+	angle = pi*2.0 #(360 * pi / 180) # ggrrr.. need to convert or debug for hours :-)
+	bpy.ops.mesh.spin(steps=segments, dupli=False, angle=angle, center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0))
+	# if duplicate: delete original meshes... still selected.
 	#bpy.ops.mesh.delete(type='VERT')	
+	#bpy.ops.mesh.delete(type='EDGE')	
+	bpy.ops.mesh.select_all(action='SELECT')	
 	bpy.ops.mesh.remove_doubles()	
 	bpy.context.area.type = prevAreaType  	# restore area / context
-	bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.normals_make_consistent(inside=False)
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
 	o.location[2] += newz
@@ -542,21 +551,26 @@ def rotate_extrudeOLD(o=None):
 
 
 
-# an extra not present in OpenSCAD
-def round_edges(width=0.1, segments=32, angle_limit=30, apply=False ,o=None):
+# an extra not present in OpenSCAD... using Blender's "bevel" Modifier
+def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180, apply=True ,o=None):
 	scn = bpy.context.scene 
 	#bpy.ops.object.select_all(action = 'DESELECT')
 	#o.select = True
 	bev = o.modifiers.new('MyBevel', 'BEVEL')
 	bev.width = width
 	bev.segments = segments
+	bev.use_only_vertices= verts_only
 	bev.angle_limit = angle_limit
 	# often forgotten: needs to be active!!
 	scn.objects.active = o
 	if apply==True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBevel')
-	o.name = 'rnd('+obj.name+')'   
+	o.name = 'rnd('+o.name+')'   
 	return o
+
+#rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )),fn=16)
+#round_edges(width=5, segments=64, o=rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))))
+
 
 #################################################################
 ## some additional library functions
