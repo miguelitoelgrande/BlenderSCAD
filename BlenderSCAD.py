@@ -397,18 +397,26 @@ def polygon(points, paths=[]):
 #rotate([90,0,0],	 polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))
 
 # OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
-# TODO: only height supported for the moment...
-def linear_extrude(height, o=None):
+# see WIKI: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/2D_to_3D_Extrusion
+# TODO: convexity and center currently ignored...
+def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
 	if o is None:
 		o = bpy.context.object
 	bpy.context.scene.objects.active = o
 	o.select = True
+	# TODO: center object...
+	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+	#bpy.context.scene.cursor_location = (5,5,0)
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
 	bpy.ops.mesh.extrude_region_move(TRANSFORM_OT_translate={"value":(0.0,0.0,height)})
 	# bpy.ops.mesh.extrude_region_move(MESH_OT_extrude=None, TRANSFORM_OT_translate=None)
 	if bpy.context.active_object.mode is not 'OBJECT': 
-		bpy.ops.object.mode_set(mode = 'OBJECT')		
+		bpy.ops.object.mode_set(mode = 'OBJECT')
+	if twist != 0:	
+		mod1 = o.modifiers.new('Mod1', 'SIMPLE_DEFORM')
+		mod1.angle = twist	* (pi/180)
+		#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')				
 	#o.data.materials.append(mat)
 	#o.color = defColor
 	o.name = 'le('+o.name+')'	
@@ -416,6 +424,13 @@ def linear_extrude(height, o=None):
 
 #linear_extrude( 8, polygon(points=[[15,0],[0,15],[0,0] ]) )
 #linear_extrude( 5, circle(r=3) )
+
+#linear_extrude(height = 10, center = true, convexity = 10, twist = 100, o=translate([2, 0, 0], polygon(points=[ [8,-8],[8,8],[-8,8],[-8,-8] ]) ) )
+#linear_extrude(height = 100, center = true, convexity = 10, twist = 100, o=translate([2, 0, 0], polygon(points=[ [8,-8],[8,8],[-8,8]]) ) )
+
+#linear_extrude(height = 10, center = true, twist = -500, o=translate([2, 0, 0],circle(r = 1)))
+
+#linear_extrude(height = 10, twist=180, o=polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
 
 
 # OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
