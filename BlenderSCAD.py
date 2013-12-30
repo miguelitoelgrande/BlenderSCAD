@@ -32,6 +32,9 @@ import os
 import bpy
 import bpy_types
 
+from mathutils import *
+from math import *
+
 #################################################################
 ## BlenderSCAD core functionality
 #################################################################   
@@ -73,12 +76,15 @@ aqua = (0.00,1.00,1.00,0)
 # default color for object creators below...
 defColor = (1.0,1.0,0.1,0)
 
-#bpy.ops.object.mode_set(mode = 'OBJECT')
+if bpy.context.active_object is not None:
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
 
 # remove everything after experiments...
 def clearAllObjects():
-	# FIX: Call fails if there are no objects...
-	#bpy.ops.object.mode_set(mode = 'OBJECT')
+	if bpy.context.active_object is not None:
+		if bpy.context.active_object.mode is not 'OBJECT': 
+			bpy.ops.object.mode_set(mode = 'OBJECT')
 	bpy.ops.object.select_all()
 	bpy.ops.object.delete()
 	bpy.ops.object.select_all()
@@ -199,23 +205,15 @@ def export_stl(filename, o=None, ascii=False):
 
 #export_stl("O:/BlenderStuff/demo.stl", cube([10,20,15]) )
 
+#import sys
+#sys.path.append("O:/BlenderStuff/BlenderSCAD") 
+#from bpy.addons import io_import_scene_dxf
+#readAndBuildDxfFile("O:/BlenderStuff/test.dxf")
+#cube([10,10,20])			
+#bpy.ops.import_scene.autocad_dxf(filepath="O:/BlenderStuff/test.dxf")
+#o = bpy.context.active_object
+#o.name="DXFtest"
 
-# OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
-# bpy.ops.mesh.spin(steps=9, dupli=False, angle=1.5708, center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 0.0))
-
-# WiP!! still buggy...
-def rotate_extrude(o=None):
-	if o is None:
-		o = bpy.context.object
-	bpy.ops.object.select_all(action = 'DESELECT')
-	o.select = True
-	bpy.ops.object.mode_set(mode = 'EDIT')
-	bpy.ops.mesh.spin()
-	bpy.ops.object.mode_set(mode = 'OBJECT')
-	return o
-
-#rotate_extrude( circle(15) )
-#circle(30)
 
 
 # OpenSCAD: translate(v = [x, y, z]) { ... }
@@ -272,16 +270,21 @@ def color( rgba=(1.0,1.0,1.0,1.0), o=None):
 #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
 #   Enclose selected vertices in a convex polyhedron   
 def hull(o1,*objs):
-    o = union(o1,*objs)
-    bpy.ops.object.mode_set(mode = 'EDIT')
-    for v in o.data.vertices:
-        v.select = True
-    bpy.ops.mesh.convex_hull(use_existing_faces=True)
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.remove_doubles()
-    bpy.ops.object.mode_set(mode = 'OBJECT')
-    o.name= "hull(" + o.name + ")"
-    return o
+	o = union(o1,*objs)
+	bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	#print("VERTICES: *********")	
+	for v in o.data.vertices:
+		v.select = True
+		#print (v)
+	bpy.ops.mesh.convex_hull(use_existing_faces=True)
+	bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.remove_doubles()
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
+	o.name= "hull(" + o.name + ")"
+	return o
 
 
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
@@ -334,6 +337,182 @@ def difference(o1,o2,*objs, apply=True):
 def intersection(o1,o2,*objs, apply=True):
 	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT', apply=apply)
 
+
+# OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
+def polygon(points, paths=[]):
+	# Create mesh and object
+	me = bpy.data.meshes.new('polyMesh')
+	o = bpy.data.objects.new('poly', me)
+	o.location = (0.0,0.0,0.0)
+	o.show_name = True
+	# Link object to scene
+	bpy.context.scene.objects.link(o)
+	# Create mesh from given verts, edges, faces. Either edges or
+	# faces should be [], or you ask for problems
+	verts=[] 
+	for p in points:
+		#print([p[0],p[1],0])
+		verts.append([p[0],p[1],0])
+	edges = []
+	if len(paths)== 0:
+		for i in range (0, len(points)-1):			
+			edges.append([i,i+1])
+		edges.append([len(points)-1, 0])	
+	else:
+		for p in paths:
+			for i in range(0, len(p)-1):
+				#print([p[i],p[i+1]])
+				edges.append([p[i],p[i+1]])		
+			#print([p[i],p[0]])
+			edges.append([p[i+1],p[0]])									
+	faces = []
+	me.from_pydata(verts, edges, [])
+	# Update mesh with new data
+	me.update(calc_edges=True)	
+	bpy.context.scene.objects.active = o
+	o.select = True
+	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+	#bpy.context.scene.cursor_location = (5,5,0)
+	#
+	# having this as a curve to reuse in rotate_extrude...
+	#bpy.ops.object.convert(target='CURVE')
+	return o
+
+# some profile
+#polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )
+
+# OpenSCAD example: double Triangle, using two paths... 
+# TODO: fill polygon?
+# polygon(points=[[0,0],[10,0],[0,10],[1,1],[8,1],[1,8]], paths=[[0,1,2],[3,4,5]])
+
+#rotate([90,0,0],	 polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))
+
+# OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
+# Out of Order... next thing to fix.
+def linear_extrude(height, o=None):
+	if o is None:
+		o = bpy.context.object
+	bpy.context.scene.objects.active = o
+	o.select = True
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')	
+	#prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
+	#bpy.context.area.type = 'VIEW_3D'
+	#print (bpy.ops.mesh.spin.poll())	
+    # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
+	bpy.ops.mesh.extrude(type='REGION')
+	# bpy.ops.mesh.extrude_region_move(MESH_OT_extrude=None, TRANSFORM_OT_translate=None)
+	bpy.ops.mesh.extrude_region_move(RANSFORM_OT_translate=[0,0,height])
+	#bpy.context.area.type = prevAreaType  	# restore area / context
+	# delete original meshes... still selected.
+	#bpy.ops.mesh.delete(type='VERT')	
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')		
+	o.data.materials.append(mat)
+	o.color = defColor
+	o.name = 're('+o.name+')'	
+	# TODO: need to cleanup the result
+	mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
+	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')	
+	#hull(o)
+	return o
+
+#linear_extrude( 5, polygon(points=[[50,0],[0,50],[0,0] ]) )
+
+# triangel
+#polygon(points=[[50,0],[0,50],[0,0] ])
+
+
+
+# OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
+# This emulation would also swallow 3D objects ;-)
+# params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
+def rotate_extrude(o=None):
+	precision = 360
+	if o is None:
+		o = bpy.context.object
+	bpy.context.scene.objects.active = o
+	o.select = True
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')	
+	prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
+	bpy.context.area.type = 'VIEW_3D'
+	#print (bpy.ops.mesh.spin.poll())	
+    # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
+	bpy.ops.mesh.spin(steps=precision, dupli=False, angle=360, center=(0.0, 0.0, 0.0), axis=(0.0, 1.0, 0.0))
+	bpy.context.area.type = prevAreaType  	# restore area / context
+	# delete original meshes... still selected.
+	bpy.ops.mesh.delete(type='VERT')	
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')	
+	rotate([90,0,0],o)
+	o.data.materials.append(mat)
+	o.color = defColor
+	o.name = 're('+o.name+')'	
+	# TODO: need to cleanup the result
+	mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
+	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')	
+	#hull(o)
+	return o
+
+#rotate_extrude (polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
+#rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )))
+#rotate_extrude (circle(r=4))
+#rotate_extrude (translate([5,0,0],cube([10,10,5])))
+
+
+
+# somewhat buggy... rather follow path, requires two curves circle and ... to  operate...
+def rotate_extrudeOLD(o=None):
+	if o is None:
+		o = bpy.context.object
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o.select = True
+	#r = sqrt(o.location[0]*o.location[0] + o.location[1]*o.location[1])
+	r = o.location[0]
+	path = bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
+#	path.location[2] += o.location[1]
+	curve = path.data
+	curve.bevel_object = o
+	bpy.ops.object.convert(target='MESH')
+	res = bpy.context.object
+	res.name = o.name
+	res.data.materials.append(mat)
+	res.color = defColor
+	bpy.context.scene.objects.unlink(o)
+	return res
+
+#rotate_extrude( translate([20,10,0], circle(15)) )
+		
+
+def rcylinder(r=1, h=1, b=0.5, r1=-1, r2=-1):
+	if r1 == -1 or r2 == -1:
+		r1 = r
+		r2 = r
+	return translate([0,0,-h/2],
+			union(
+			   rotate_extrude(translate([r1-b,b,0], circle(r = b)))
+	  		 , rotate_extrude(translate([r2-b, h-b, 0], circle(r = b)))			
+            )
+         )
+
+# TODO: somehow broken hull() operator on this one...
+#rcylinder(12, 24, b=4)
+
+
+
+
+#rotate_extrude (translate([10,10,10] ,polygon(points=[[0,0],[100,0],[0,100]])))
+
+
+# TODO1: should work without "translate", i.e. middle...
+# TODO2: faces missing??
+#polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5],[0,0]] )
+#rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5],[0,0]] ))) 
+#rotate_extrude( translate([10,10,10] ,circle(r=5) ))
+
+# potential alternative:
+# from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
 
 
 # an extra not present in OpenSCAD
@@ -494,7 +673,7 @@ def Demo2():
 	 )
 	)
 
-#Demo2()
+Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -670,6 +849,25 @@ def Test3():
   # print (el.select)
   #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
 
+
+def ScreenAreaExperiment():
+	#make a dict of areas keyed by their type 
+	areas = {a.type:a for a in bpy.context.screen.areas}
+	#get the one we want, or None if not available
+	area = areas.get("VIEW_3D",None)
+	#if there is one of that kind
+	if area:
+		space = area.spaces.active
+		print (space)
+	#view3d.pivot_point='CURSOR'
+	#view3d.cursor_location = (0.0, 0.0, 0.0)
+	#
+	print(bpy.context.area.type)
+## found this one after long search: http://blender.stackexchange.com/questions/5810/repeat-a-python-function-multiple-times	
+## simply force right context: bpy.context.area.type = 'VIEW_3D'
+
+
+
 ############################################################
 # HUGE todo: auto convert and exec .scad files :-)
 # from:
@@ -719,4 +917,3 @@ def convertOpenSCAD():
 	#exec(compile( decodedTxt, filename, 'exec'))
 
 #convertOpenSCAD()
-
