@@ -157,9 +157,10 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False):
 # OpenSCAD: sphere(r=1, d=-1)   
 # bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, size=1.0, view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False,   
 def sphere(r=1, d=-1, center=true):
+	precision = 32 #int(2*pi*r) # number segments dependent on initial size - later scaling: bad luck :-) TODO: fn= fa= fs=
 	if d != -1 :
 		  r= d/2;
-	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=32, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
+	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=precision, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Sphere'] # not safe enough if an earlier object named 'Sphere' exists...
 	o = bpy.context.active_object
 	o.name='sp' # +str(index)
@@ -174,10 +175,13 @@ def sphere(r=1, d=-1, center=true):
 
 # Construct a circle
 ## OpenSCAD: circle(r = <val>);
-def circle(r=10.0 ):
+def circle(r=10.0, fill=True ):
 	precision = 32 # TODO
-    #  fill_type (enum in [‘NOTHING’, ‘NGON’, ‘TRIFAN’], (optional))
-	bpy.ops.mesh.primitive_circle_add(vertices=precision, radius=r, fill_type='NGON', location=(0.0,0.0,0.0), layers=mylayers)
+	if fill is False:    
+		fill_type = 'NOTHING'
+	else:
+		fill_type = 'NGON'	 #  fill_type (enum in [‘NOTHING’, ‘NGON’, ‘TRIFAN’], (optional))
+	bpy.ops.mesh.primitive_circle_add(vertices=precision, radius=r, fill_type=fill_type, location=(0.0,0.0,0.0), layers=mylayers)
 	#bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
@@ -274,14 +278,15 @@ def color( rgba=(1.0,1.0,1.0,1.0), o=None):
 def hull(o1,*objs):
 	o = union(o1,*objs)
 	bpy.context.scene.objects.active = o
+	o.select=True
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')
 	#print("VERTICES: *********")	
-	for v in o.data.vertices:
-		v.select = True
+	#for v in o.data.vertices:
+	#	v.select = True
 		#print (v)
-	bpy.ops.mesh.convex_hull(use_existing_faces=True)
-	bpy.ops.mesh.select_all(action='SELECT')
+	#bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.convex_hull(use_existing_faces=False)
 	bpy.ops.mesh.remove_doubles()
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -346,15 +351,13 @@ def polygon(points, paths=[]):
 	# Create mesh and object
 	me = bpy.data.meshes.new('polyMesh')
 	o = bpy.data.objects.new('poly', me)
+	o.data.materials.append(mat)
+	o.color = defColor
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
-	# Link object to scene
-	bpy.context.scene.objects.link(o)
-	# Create mesh from given verts, edges, faces. Either edges or
-	# faces should be [], or you ask for problems
+	bpy.context.scene.objects.link(o) 	# Link object to scene
 	verts=[] 
 	for p in points:
-		#print([p[0],p[1],0])
 		verts.append([p[0],p[1],0])
 	edges = []
 	if len(paths)== 0:
@@ -369,32 +372,59 @@ def polygon(points, paths=[]):
 			#print([p[i],p[0]])
 			edges.append([p[i+1],p[0]])									
 	faces = []
-	me.from_pydata(verts, edges, [])
+	# cool code below to generate faces, however, holes in the polygon would be tricky :-)
+	# see path example with inner triangle
+#	if len(paths)== 0:
+#		face = []
+#		faceB = [] # back side
+#		for i in range (0, len(verts)):			
+#			face.append(i)
+#			faceB.append(len(points)-i-1)
+#		#edges.append([len(points)-1, 0])	
+#		faces = [face, faceB]
+#	else:
+#		faces = paths	
+	# print({'verts':verts} , {'edges': edges}, {'faces': faces} )
+	me.from_pydata(verts, edges, faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
 	# Update mesh with new data
-	me.update(calc_edges=True)	
-	# add face...
+	me.update(calc_edges=True)		
 	bpy.context.scene.objects.active = o
 	o.select = True
-	o.data.materials.append(mat)
-	o.color = defColor
+	# Note: switching mode would fail before mesh is defined and object selected...
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
-	bpy.ops.mesh.edge_face_add()
+	for el in o.data.vertices: el.select = True
+	for el in o.data.edges: el.select = True
+	try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
+		bpy.ops.mesh.fill_grid()
+	except RuntimeError:
+		bpy.ops.mesh.fill() 	
 	bpy.ops.mesh.flip_normals()
+	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
 	#bpy.context.scene.cursor_location = (5,5,0)
-	#
 	# having this as a curve to reuse in rotate_extrude...
 	#bpy.ops.object.convert(target='CURVE')
 	return o
 
-# some profile
+## triangle
+#polygon(points=[ [8,-8],[8,8],[-8,8] ]) 
+## single square, centered around origin
+#polygon( points=[ [8,-8],[8,8],[-8,8],[-8,-8] ] , paths=[[0,1,2,3]])
+## some profile
 #polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )
-# OpenSCAD example: double Triangle, using two paths... 
-#polygon(points=[[0,0],[10,0],[0,10],[1,1],[8,1],[1,8]], paths=[[0,1,2],[3,4,5]])
+#rotate([90,0,0],  polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
+## OpenSCAD example: double Triangle, using two paths...
+#polygon(points=[[0,0],[50,0],[0,50],[5,5],[40,5],[5,40]], paths=[[0,1,2],[3,4,5]])
+#
+# "Fish"
+#polygon(points=[[0,0],[100,0],[0,100],[5,5],[40,5],[5,40],[45,45],[45,80],[80,45]], paths=[[3,4,5],[0,1,2],[6,7,8]])
+# triangle with two triangular holes...
+#polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]])
 
-#rotate([90,0,0],	 polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))
+
+
 
 # OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
 # see WIKI: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/2D_to_3D_Extrusion
@@ -422,54 +452,73 @@ def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
 	o.name = 'le('+o.name+')'	
 	return o
 
-#linear_extrude( 8, polygon(points=[[15,0],[0,15],[0,0] ]) )
-#linear_extrude( 5, circle(r=3) )
-
-#linear_extrude(height = 10, center = true, convexity = 10, twist = 100, o=translate([2, 0, 0], polygon(points=[ [8,-8],[8,8],[-8,8],[-8,-8] ]) ) )
+#linear_extrude( 20, polygon(points=[[30,0],[0,30],[0,0] ]) )
+#linear_extrude( 50, circle(r=30) )
+#
+#linear_extrude(height = 80, center = true, twist = 100, o=translate([2, 0, 0], polygon(points=[ [8,-8],[8,8],[-8,8],[-8,-8] ]) ) )
 #linear_extrude(height = 100, center = true, convexity = 10, twist = 100, o=translate([2, 0, 0], polygon(points=[ [8,-8],[8,8],[-8,8]]) ) )
-
 #linear_extrude(height = 10, center = true, twist = -500, o=translate([2, 0, 0],circle(r = 1)))
-
-#linear_extrude(height = 10, twist=180, o=polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
-
+#linear_extrude(height = 10, o=polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]]))
+#linear_extrude(height = 30, twist=-40, o=polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]]))
 
 # OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
 # This emulation would also swallow 3D objects ;-)
 # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
+# Wiki on Blender Spin: http://de.wikibooks.org/wiki/Blender_Dokumentation:_Spin_und_SpinDup
 def rotate_extrude(o=None):
-	precision = 360
+	precision = 32 #360 #* 0.10
 	if o is None:
 		o = bpy.context.object
 	bpy.context.scene.objects.active = o
 	o.select = True
+	#rotate([90,0,0],o) # emulating OpenSCAD: assumes 2D object in X-Y-Plane...
+	# therefore: X-Axis determines "radius" of the spin, but y will transform into height of resulting spin object
+	newz = o.location[1] # z-Offset of the final object...
+	o.location[1]=0
+	rotate([90,0,0],o )
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
 	prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
-	bpy.context.area.type = 'VIEW_3D'
+	bpy.context.area.type = 'VIEW_3D' # probably: need to set cursor for Spin to be right...	
+	print(o.location)
+	bpy.context.scene.cursor_location = o.location
+	bpy.ops.view3d.viewnumpad(type='TOP')
+	bpy.ops.view3d.snap_cursor_to_selected()
 	#print (bpy.ops.mesh.spin.poll())	
     # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
-	bpy.ops.mesh.spin(steps=precision, dupli=False, angle=360, center=(0.0, 0.0, 0.0), axis=(0.0, 1.0, 0.0))
-	bpy.context.area.type = prevAreaType  	# restore area / context
+	angle = 360 # ggrrr.. need to convert or debug for hours :-)
+	bpy.ops.mesh.spin(steps=precision, dupli=False, angle=(angle * pi / 180), center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0))
 	# delete original meshes... still selected.
-	bpy.ops.mesh.delete(type='VERT')	
+	#bpy.ops.mesh.delete(type='VERT')	
+	bpy.ops.mesh.remove_doubles()	
+	bpy.context.area.type = prevAreaType  	# restore area / context
+	bpy.ops.mesh.select_all(action='SELECT')
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
-	rotate([90,0,0],o)
-	o.data.materials.append(mat)
-	o.color = defColor
+	o.location[2] += newz
 	o.name = 're('+o.name+')'	
+	#	o.data.materials.append(mat)
+	#	o.color = defColor
 	# TODO: need to cleanup the result
-	mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
-	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')
+	#mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
+	#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')
 	return o
 
 #rotate_extrude (polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
 #rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )))
-#rotate_extrude (translate([5,0,0] ,circle(r=4)))
-#rotate_extrude (translate([5,0,0],cube([10,10,5])))
+#rotate_extrude (translate([5,0,0] ,circle(r=4, fill=true)))
+#rotate_extrude (translate([10,10,10] ,polygon(points=[[0,0],[100,0],[0,100]])))
+# should better warn on 3D objects ...rotate_extrude (translate([5,0,0],cube([10,10,5])))
+#rotate_extrude( translate([10,10,10] ,circle(r=5) ))
+#hull( rotate_extrude(translate([20,0,0], circle(r = 10, fill=true) )) )
+#rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))) 
+#rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[4,0],[4,4],[0,4]]) )) 
+#rotate_extrude( translate([9-2, 2, 0], circle(r = 2)))
 
 
 
+# Curve-based alternative: TODO: could be a follow-path operator at a later point in time...
+# from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
 # somewhat buggy... rather follow path, requires two curves circle and ... to  operate...
 def rotate_extrudeOLD(o=None):
 	if o is None:
@@ -490,37 +539,7 @@ def rotate_extrudeOLD(o=None):
 	bpy.context.scene.objects.unlink(o)
 	return res
 
-#rotate_extrude( translate([20,10,0], circle(15)) )
-		
 
-def rcylinder(r=1, h=1, b=0.5, r1=-1, r2=-1):
-	if r1 == -1 or r2 == -1:
-		r1 = r
-		r2 = r
-	return translate([0,0,-h/2],
-			union(
-			   rotate_extrude(translate([r1-b,b,0], circle(r = b)))
-	  		 , rotate_extrude(translate([r2-b, h-b, 0], circle(r = b)))			
-            )
-         )
-
-# TODO: somehow broken hull() operator on this one...
-#rcylinder(12, 24, b=4)
-
-
-
-
-#rotate_extrude (translate([10,10,10] ,polygon(points=[[0,0],[100,0],[0,100]])))
-
-
-# TODO1: should work without "translate", i.e. middle...
-# TODO2: faces missing??
-#polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5],[0,0]] )
-#rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5],[0,0]] ))) 
-#rotate_extrude( translate([10,10,10] ,circle(r=5) ))
-
-# potential alternative:
-# from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
 
 
 # an extra not present in OpenSCAD
@@ -596,6 +615,26 @@ def rcube(Size=[20,20,20],b=0.5):
 
 #rcube([10,20,10],1)
 
+# based on "rounded Primitives" from Thingiverse
+def rcylinder(r=1, h=1, b=0.5, r1=-1, r2=-1):
+	if r1 == -1 or r2 == -1:
+		r1 = r
+		r2 = r
+		print([r1,r2])
+	return translate([0,0,-h/2],
+			hull(
+			   rotate_extrude(translate([r1-b, b, 0], circle(r = b)))
+	  		 , rotate_extrude(translate([r2-b, h-b, 0], circle(r = b)))			
+            )
+         )
+
+#rcylinder(8, 24, b=2)
+
+# TODO: Alternative: rounded Cylinder Caps...
+#intersection( translate([0,0,-70],sphere(r=80)), cylinder(r=10,h=30))
+#intersection( translate([0,0,-5],sphere(r=15)), cylinder(r=10,h=30))
+#difference(intersection( translate([0,0,-5],sphere(r=15)), cylinder(r=10,h=30)), translate([0,0,33],cube([20,20,50],center=true)) )
+
 
 #################################################################
 ## Tests
@@ -634,11 +673,6 @@ def OpenSCADtests():
 			   )
 	#
 	color(green, cylinder(h=10,r=2))
-	# Testing the Hull operator...
-	scale( (0.5,0.5,0.5) ,rotate( (90,0,90) , hull ( union( sphere(r=4),
-		#cylinder(r1=10,r2=20,h=20) 
-		translate( (20,20,-10) , cylinder(r1=4,r2=8,h=20,center=true)   )
-	))))
 	#
 
 #OpenSCADtests()
@@ -648,9 +682,15 @@ def HullDemo():
         translate([0,0,0], cylinder(r=4,h=4) )
         ,translate([20,0,0], cylinder(r=4,h=4) )
         ,translate([10,20,0], cylinder(r=4,h=4) )
-    )
-    
-#HullDemo()   
+    )    
+#HullDemo() 
+
+def HullDemo2():
+	return scale( (0.5,0.5,0.5) ,rotate( (90,0,90) , hull ( union( sphere(r=4),
+	#cylinder(r1=10,r2=20,h=20) 
+	translate( (20,20,-10) , cylinder(r1=4,r2=8,h=20,center=true)   )
+))))
+#HullDemo2()
 
 
 def Demo1():
