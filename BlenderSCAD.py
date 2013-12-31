@@ -95,8 +95,15 @@ def clearAllObjects():
 	#bpy.ops.object.select_all()
 	#bpy.ops.object.delete()
 	for o in bpy.context.scene.objects:
-		bpy.context.scene.objects.unlink(o)
-
+		if o.type == 'MESH':
+			mesh = o.data
+			bpy.context.scene.objects.unlink(o)	
+			bpy.data.objects.remove(o)
+			bpy.data.meshes.remove(mesh)
+		else:		
+			bpy.context.scene.objects.unlink(o)
+			bpy.data.objects.remove(o)
+		
 
 # CAUTION! clear workspace 
 clearAllObjects()   
@@ -419,7 +426,10 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 	objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
 	if apply is True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
-		bpy.context.scene.objects.unlink(objB)
+		mesh = objB.data
+		bpy.context.scene.objects.unlink(objB)	
+		bpy.data.objects.remove(objB)
+		bpy.data.meshes.remove(mesh)
 	else:
 		objB.hide_select = True
 		objB.hide = True
@@ -918,7 +928,28 @@ def makeFtBlock():
 ##
 ###########################################################################################
 
+#http://askubuntu.com/questions/325485/how-to-make-a-mesh-by-using-python-script-on-blender
+def remove_item(item):
+	# clear mesh and object
+	for item in bpy.context.scene.objects:
+	    if item.type == 'MESH':
+	        bpy.context.scene.objects.unlink(item)
+	for item in bpy.data.objects:
+	    if item.type == 'MESH':
+	        bpy.data.objects.remove(item)
+	for item in bpy.data.meshes:
+	    bpy.data.meshes.remove(item)
+	for item in bpy.data.materials:
+	    bpy.data.materials.remove(item)
 
+# cleanup datafile:
+#clearAllObjects()   
+#for o in bpy.data.objects:
+#	# will fail on purpose on objects still in use!!!
+#	bpy.data.objects.remove(o)
+	
+#item= bpy.data.materials["deleteMe"]
+#bpy.data.materials.remove(item)
 
 # Curve-based alternative: TODO: could be a follow-path operator at a later point in time...
 # from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
