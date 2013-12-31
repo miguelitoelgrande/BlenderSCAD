@@ -106,11 +106,13 @@ def listAllObjects():
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def cube(size=(0.0,0.0,0.0), center=False):
-	add_cube = bpy.ops.mesh.primitive_cube_add
-	add_cube(location=(0.0,0.0,0.0), layers=mylayers)
+	if type(size) == int:    # support for single size value argument
+		size=(size,size,size)
+	bpy.ops.mesh.primitive_cube_add(location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
 	o.dimensions=size
+	bpy.ops.object.transform_apply(scale=True)  
 	o.name='cu' # +str(index)
 	# simple color will only display via my def. Material setting
 	o.data.materials.append(mat)
@@ -122,6 +124,7 @@ def cube(size=(0.0,0.0,0.0), center=False):
 	if (center==False):
 		bpy.ops.transform.translate(value=(size[0]/2,size[1]/2,size[2]/2))
 	return o
+
 
 # Construct a cylinder mesh
 # bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -244,9 +247,46 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 		o = bpy.context.object
 	bpy.ops.object.select_all(action = 'DESELECT')
 	o.select = True
-	deg = (pi/180)  # one degree is 2*pi/360
-	o.rotation_euler = ( a[0]*deg, a[1]*deg, a[2]*deg)
+	# deg = (pi/180)  # one degree is 2*pi/360
+	ax=radians(a[0]) # a[0]*deg
+	ay=radians(a[1]) # a[1]*deg
+	az=radians(a[2]) # a[2]*deg
+	#print([ax,ay,az])
+	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
+	bpy.ops.transform.rotate(value = ax, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
+	bpy.ops.transform.rotate(value = ay, axis = (0, 1, 0), constraint_axis = (False, True, False), constraint_orientation = 'GLOBAL')
+	bpy.ops.transform.rotate(value = az, axis = (0, 0, 1), constraint_axis = (False, False, True), constraint_orientation = 'GLOBAL')
+	bpy.ops.object.transform_apply(rotation=True)  
+	# OpenSCAD emulation: need to also rotate location vector.
+	# some relocation via matrix multiplications (hopefully correct)
+	# have a look at e.g. http://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/geometry/geo-tran.html
+	x = o.location[0]
+	y = o.location[1]
+	z = o.location[2]
+	#     z-Transform  
+	o.location[0] = (cos(az)*x -sin(az)*y) 
+	o.location[1] = (sin(az)*x +cos(az)*y)            
+	x = o.location[0]
+	y = o.location[1]
+	#     x Transform 
+	o.location[1] = ( cos(ax)*y -sin(ax)*z )
+	o.location[2] = ( sin(ax)*y +cos(ax)*z ) 
+	y = o.location[1]
+	z = o.location[2]
+	#     y-Transform   
+	o.location[0] = (cos(ay)*x +sin(ay)*z) 
+	o.location[2] = (-sin(ay)*x +cos(ay)*z)
+	x = o.location[0]
+	z = o.location[2]
 	return o
+
+#translate([10,0,0],cube([10,10,10],center=false ))
+#rotate([0,00,90]  )	
+#rotate([0,90,00]  )
+#rotate([90,00,00] )
+#rotate([90,90,90] )
+#rotate([45,45,45]	)
+#
 
 # OpenSCAD: scale(v = [x, y, z]) { ... }
 def scale(v=[1.0,1.0,1.0], o=None):
@@ -480,7 +520,7 @@ def rotate_extrude(o=None, fn=-1):
 	o.select = True
 	# therefore: X-Axis determines "radius" of the spin, but y will transform into height of resulting spin object
 	newz = o.location[1] # z-Offset of the final object...
-	o.location[1]=0.0
+	o.location[1]=0.0	
 	rotate([90,0,0],o ) # emulating OpenSCAD: assumes 2D object in X-Y-Plane...
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
@@ -514,6 +554,7 @@ def rotate_extrude(o=None, fn=-1):
 	return o
 
 #rotate_extrude (polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
+#translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))
 #rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )))
 #rotate_extrude (translate([5,0,0] ,circle(r=4, fill=true)))
 #rotate_extrude (translate([10,10,10] ,polygon(points=[[0,0],[100,0],[0,100]])))
@@ -523,31 +564,6 @@ def rotate_extrude(o=None, fn=-1):
 #rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))) 
 #rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[4,0],[4,4],[0,4]]) )) 
 #rotate_extrude( translate([9-2, 2, 0], circle(r = 2)))
-
-
-
-# Curve-based alternative: TODO: could be a follow-path operator at a later point in time...
-# from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
-# somewhat buggy... rather follow path, requires two curves circle and ... to  operate...
-def rotate_extrudeOLD(o=None):
-	if o is None:
-		o = bpy.context.object
-	bpy.ops.object.select_all(action = 'DESELECT')
-	o.select = True
-	#r = sqrt(o.location[0]*o.location[0] + o.location[1]*o.location[1])
-	r = o.location[0]
-	path = bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
-#	path.location[2] += o.location[1]
-	curve = path.data
-	curve.bevel_object = o
-	bpy.ops.object.convert(target='MESH')
-	res = bpy.context.object
-	res.name = o.name
-	res.data.materials.append(mat)
-	res.color = defColor
-	bpy.context.scene.objects.unlink(o)
-	return res
-
 
 
 
@@ -654,9 +670,6 @@ def rcylinder(r=1, h=1, b=0.5, r1=-1, r2=-1):
 ## Tests
 #################################################################   
 	
-#cylinder(r=10,h=20)	
-#cylinder(r=10,h=20, center=true)
-
 # A few OpenSCAD like operations... need to substitute brackets
 #  and need to change call order... implicit unions, etc.   
 def OpenSCADtests():
@@ -688,6 +701,9 @@ def OpenSCADtests():
 	#
 	color(green, cylinder(h=10,r=2))
 	#
+	cylinder(r=10,h=20)	
+	cylinder(r=10,h=20, center=true)
+
 
 #OpenSCADtests()
 
@@ -800,19 +816,73 @@ def pacman():
 
 #pacman()
 
+# a fischertechnik helper
+def ft_nut(L,A,SLOT,H):
+	return union(
+		translate([L/2,0,0],
+		  color(blue,
+			cube([A,SLOT,H+2],center=true)))	
+	,   translate([L/2-A/2,0,0],
+          color(red,
+			cylinder(r = (A/2), h = H*2+2,center = true)))
+	)
 
+# a fischertechnik basic block. incomplete, but serves as a demo for the
+# fixed rotate() behavior: also rotating the location around the center.
+def makeFtBlock():
+	L = 15 # Laenge in mm
+	B = 15 # Breite in mm
+	H = 30 # Hoehe in mm
+	A = 4 # axis diameter
+	SLOT = 3 
+	return translate ([0,0,H/2],
+		difference(
+			cube([L,B,H],center=true)
+			, union(
+				   rotate([0,0,0]  , ft_nut(L,A,SLOT,H) )
+				 , rotate([0,0,90] , ft_nut(L,A,SLOT,H) )
+				 , rotate([0,0,180], ft_nut(L,A,SLOT,H) )
+				 , rotate([0,0,270] , ft_nut(L,A,SLOT,H) )
+				 # bottom:
+				 , translate([0,0,-7.5] , rotate([90,90,0],  ft_nut(L,A,SLOT,H) ))
+			)
+		)
+	 )	
 
+#color(red, makeFtBlock() )
 
-
-
-
-
-
+						
 ###########################################################################################
 ##
 ## Playground: Below are some experimental script blocks. Potential reuse...  
 ##
 ###########################################################################################
+
+
+
+# Curve-based alternative: TODO: could be a follow-path operator at a later point in time...
+# from: http://blenderscripting.blogspot.ch/2011/05/blender-25-python-bezier-from-list-of.html
+# somewhat buggy... rather follow path, requires two curves circle and ... to  operate...
+def rotate_extrudeOLD(o=None):
+	if o is None:
+		o = bpy.context.object
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o.select = True
+	#r = sqrt(o.location[0]*o.location[0] + o.location[1]*o.location[1])
+	r = o.location[0]
+	path = bpy.ops.curve.primitive_bezier_circle_add(radius=r, location=(0.0,0.0,0.0), layers=mylayers)
+#	path.location[2] += o.location[1]
+	curve = path.data
+	curve.bevel_object = o
+	bpy.ops.object.convert(target='MESH')
+	res = bpy.context.object
+	res.name = o.name
+	res.data.materials.append(mat)
+	res.color = defColor
+	bpy.context.scene.objects.unlink(o)
+	return res
+
+
 
 # round_edges(width=0.1, segments=32, angle_limit=30, apply=False ,obj=None):
 def round_edgesTEST(*pargs, **kwargs):
