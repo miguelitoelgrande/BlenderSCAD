@@ -126,6 +126,7 @@ def cube(size=(0.0,0.0,0.0), center=False):
 	o.dimensions=size
 	bpy.ops.object.transform_apply(scale=True)  
 	o.name='cu' # +str(index)
+	o.data.name='cu'
 	# simple color will only display via my def. Material setting
 	o.data.materials.append(mat)
 	# just some default color
@@ -146,6 +147,7 @@ def _cylinder(h=1, r=1, fn=-1):
 	#o = bpy.data.objects['Cylinder'] # not safe enough if an earlier object named 'Cylinder' exists...
 	o = bpy.context.active_object
 	o.name='cy' # +str(index)   
+	o.data.name='cy'
 	return o
 
 # Construct a conic mesh 
@@ -156,6 +158,7 @@ def _cone(h=1, r1=1, r2=2, fn=-1):
 	#o = bpy.data.objects['Cone'] # not safe enough if an earlier object named 'Cone' exists...
 	o = bpy.context.active_object
 	o.name='cn' # +str(index)
+	o.data.name='cn'
 	return o
 
 # OpenSCAD: cylinder(h = <height>, r1 = <bottomRadius>, r2 = <topRadius>, center = <boolean>);
@@ -183,6 +186,7 @@ def sphere(r=1, d=-1, center=true, fn=-1):
 	#o = bpy.data.objects['Sphere'] # not safe enough if an earlier object named 'Sphere' exists...
 	o = bpy.context.active_object
 	o.name='sp' # +str(index)
+	o.data.name='sp'
 	# simple color will only display via my def. Material setting
 	o.data.materials.append(mat)
 	# just some default color
@@ -205,6 +209,7 @@ def circle(r=10.0, fill=False, fn=-1):
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
 	o.name='ci' # +str(index)
+	o.data.name='ci'
 	o.data.materials.append(mat)
 	o.color = defColor
 	return o
@@ -377,13 +382,13 @@ def hull(o1,*objs):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	o.name= "hull(" + o.name + ")"
+	o.data.name= "hull(" + o.data.name + ")"
 	cleanup_object(o)
 	return o
 
 
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
-# bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 def group(o1,*objs):
 	res = o1
 	o1.select = True
@@ -391,10 +396,15 @@ def group(o1,*objs):
 	for obj in objs:
 		if obj != None:			
 			obj.select = True
-			obj.hide_select = True
-	bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)
+			#obj.hide_select = True
+			#Keep Hierarchy selectable, but avoid transforming children independent of parent.
+			obj.lock_location = (True,True,True)
+			obj.lock_rotation = (True,True,True)
+			obj.lock_scale    = (True,True,True)
+	bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)	
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
+
 
 def cleanup_object(o=None):
 	if o is None:	
@@ -424,6 +434,7 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 	# often forgotten: needs to be active!!
 	bpy.context.scene.objects.active = objA
 	objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
+	objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
 	if apply is True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
 		mesh = objB.data
@@ -458,8 +469,8 @@ def intersection(o1,o2,*objs, apply=True):
 # fill seems to cause probs with rotate_extrude in some cases. ->faces at start/end
 def polygon(points, paths=[], fill=False):
 	# Create mesh and object
-	me = bpy.data.meshes.new('polyMesh')
-	o = bpy.data.objects.new('poly', me)
+	me = bpy.data.meshes.new('p')
+	o = bpy.data.objects.new('p', me)
 	o.data.materials.append(mat)
 	o.color = defColor
 	o.location = (0.0,0.0,0.0)
@@ -560,6 +571,7 @@ def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
 	#o.data.materials.append(mat)
 	#o.color = defColor
 	o.name = 'le('+o.name+')'	
+	o.data.name = 'le('+o.data.name+')'	
 	return o
 
 #linear_extrude( 20, polygon(points=[[30,0],[0,30],[0,0] ]) )
@@ -609,7 +621,8 @@ def rotate_extrude(o=None, fn=-1):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
 	o.location[2] += newz
-	o.name = 're('+o.name+')'	
+	o.name = 're('+o.name+')'
+	o.data.name = 'le('+o.data.name+')'	
 	#	o.data.materials.append(mat)
 	#	o.color = defColor
 	# TODO: need to cleanup the result
@@ -645,7 +658,8 @@ def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180, apply=
 	scn.objects.active = o
 	if apply==True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBevel')
-	o.name = 'rnd('+o.name+')'   
+	o.name = 'rnd('+o.name+')'
+	o.data.name = 'le('+o.data.name+')'	
 	return o
 
 #rotate_extrude (translate([10,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] )),fn=16)
@@ -735,38 +749,38 @@ def rcylinder(r=1, h=1, b=0.5, r1=-1, r2=-1):
 #################################################################   
 	
 # A few OpenSCAD like operations... need to substitute brackets
-#  and need to change call order... implicit unions, etc.   
+# note that operators like translate,color,scale,etc. can also be called on active object 
 def OpenSCADtests():
-	c0 = cube((5,10,4),center=true) 
+	c0 = cube((5,7,4),center=true) 
+	translate(v=(-8,-5,0))
 	c1 = cube((5,10,4),center=true)
-	translate(v=(10,10,10))
+	translate(v=(10,20,20))
 	color(blue)
 	color(red,c0)
 	scale((5,9,4),c0)
-	# bpy.context.object.data.materials.append(mat)
-	# set red...
-	# bpy.context.object.color = (1,0,0,0)
 	#   
 	c0 = cube((12,12,4),center=true)
 	c1 = cube((6,6,4),center=true)  
 	color(green)
 	difference(c0,c1)
-	#intersection(c0,c1)
-	#  already almost OpenSCAD like...
+	translate(v=(1,2,2))
+	#  and almost OpenSCAD like...
 	difference (
 			   color(red,cube((12,12,4),center=true)), 
 			   cube((6,6,4),center=true)
 			   )
+	translate([55,45,0])			
 	#
 	union (
 			   color(green, cube((12,12,4),center=true) ), 
 			   color(blue, cube((6,6,9),center=false) )
 			   )
+	translate([-55,45,0])			
 	#
-	color(green, cylinder(h=10,r=2))
+	color(green, translate([50,0,-10] ,cylinder(h=10,r=2)))
 	#
-	cylinder(r=10,h=20)	
-	cylinder(r=10,h=20, center=true)
+	translate([-50,20,10], cylinder(r=10,h=20) )
+	translate([25,40,6], cylinder(r=10,h=20, center=true) )
 
 
 #OpenSCADtests()
@@ -816,7 +830,7 @@ def Demo2():
 	 )
 	)
 
-Demo2()
+#Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -873,16 +887,16 @@ b=14 # holder height
 #CSG failed, exception degenerate edge
 #Unknown internal error in boolean
 
-
 def pacman():
-    # strange: need to do it with two differences...
-    difference(
-    difference(
-        sphere(r=6)        
-    ,   translate([1,1,-6], cube([6,6,12])))
-    ,   translate([-1,4,+2], cylinder (r=1, h=3  ) )
-    ,   translate([-1,4,-5], cylinder (r=1, h=3  ) )
-    )
+	global fn
+	fn=180
+	return scale([2,2,2], translate([0,0,6],rotate([90,45,0],
+	    difference(
+	        sphere(r=6)        
+	    ,   translate([1,1,-6], cube([6,6,12]))
+	    ,   translate([-1,4,+2], cylinder (r=1, h=3  ) )
+	    ,   translate([-1,4,-5], cylinder (r=1, h=3  ) )
+	 ))))
 
 #pacman()
 
@@ -919,7 +933,7 @@ def makeFtBlock():
 		)
 	 )	
 
-#color(red, makeFtBlock() )
+color(red, makeFtBlock() )
 
 						
 ###########################################################################################
