@@ -79,19 +79,24 @@ defColor = (1.0,1.0,0.1,0)
 # emulate OpenSCAD $fn
 fn=32  # default precision: every 10 degrees a segment..
 
+
+
 if bpy.context.active_object is not None:
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
+
 
 # remove everything after experiments...
 def clearAllObjects():
 	if bpy.context.active_object is not None:
 		if bpy.context.active_object.mode is not 'OBJECT': 
 			bpy.ops.object.mode_set(mode = 'OBJECT')
-	bpy.ops.object.select_all()
-	bpy.ops.object.delete()
-	bpy.ops.object.select_all()
-	bpy.ops.object.delete()
+	#fix: also remove not selectable objects from scene
+	#bpy.ops.object.select_all()
+	#bpy.ops.object.delete()
+	for o in bpy.context.scene.objects:
+		bpy.context.scene.objects.unlink(o)
+
 
 # CAUTION! clear workspace 
 clearAllObjects()   
@@ -130,8 +135,7 @@ def cube(size=(0.0,0.0,0.0), center=False):
 # bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def _cylinder(h=1, r=1, fn=-1):
 	segments = fn if fn != -1 else globals()["fn"]
-	add_cylinder = bpy.ops.mesh.primitive_cylinder_add
-	add_cylinder(location=(0.0,0.0,0.0), radius=r , depth=h , vertices=segments, layers=mylayers)  
+	bpy.ops.mesh.primitive_cylinder_add(location=(0.0,0.0,0.0), radius=r , depth=h , vertices=segments, layers=mylayers)  
 	#o = bpy.data.objects['Cylinder'] # not safe enough if an earlier object named 'Cylinder' exists...
 	o = bpy.context.active_object
 	o.name='cy' # +str(index)   
@@ -140,8 +144,8 @@ def _cylinder(h=1, r=1, fn=-1):
 # Construct a conic mesh 
 #  bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=1.0, radius2=0.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
 def _cone(h=1, r1=1, r2=2, fn=-1):
-	add_cone = bpy.ops.mesh.primitive_cone_add
-	add_cone(location=(0.0,0.0,0.0), radius1=r1, radius2=r2, depth=h , vertices=segments, layers=mylayers)
+	segments = fn if fn != -1 else globals()["fn"]
+	bpy.ops.mesh.primitive_cone_add(location=(0.0,0.0,0.0), radius1=r1, radius2=r2, depth=h , vertices=segments, layers=mylayers)
 	#o = bpy.data.objects['Cone'] # not safe enough if an earlier object named 'Cone' exists...
 	o = bpy.context.active_object
 	o.name='cn' # +str(index)
@@ -236,6 +240,11 @@ def translate( v=(0.0,0.0,0.0), o=None):
 	bpy.ops.object.select_all(action = 'DESELECT')
 	o.select = True
 	bpy.ops.transform.translate(value=v)
+	#
+    # not sure if those updates are useful	
+	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+	bpy.context.scene.update()	
+	bpy.ops.object.transform_apply(location=True) # Apply the object’s transformation to its data
 	return o
 
 		
@@ -251,12 +260,18 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 	ax=radians(a[0]) # a[0]*deg
 	ay=radians(a[1]) # a[1]*deg
 	az=radians(a[2]) # a[2]*deg
-	#print([ax,ay,az])
+	#print([ax,ay,az])		
 	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
+	
 	bpy.ops.transform.rotate(value = ax, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = ay, axis = (0, 1, 0), constraint_axis = (False, True, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = az, axis = (0, 0, 1), constraint_axis = (False, False, True), constraint_orientation = 'GLOBAL')
-	bpy.ops.object.transform_apply(rotation=True)  
+
+    # not sure if those updates are useful	
+	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+	bpy.context.scene.update()	
+	bpy.ops.object.transform_apply(rotation=True) # Apply the object’s transformation to its data 
+#	
 	# OpenSCAD emulation: need to also rotate location vector.
 	# some relocation via matrix multiplications (hopefully correct)
 	# have a look at e.g. http://www.cs.mtu.edu/~shene/COURSES/cs3621/NOTES/geometry/geo-tran.html
@@ -264,29 +279,41 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 	y = o.location[1]
 	z = o.location[2]
 	#     z-Transform  
-	o.location[0] = (cos(az)*x -sin(az)*y) 
-	o.location[1] = (sin(az)*x +cos(az)*y)            
-	x = o.location[0]
-	y = o.location[1]
+#	o.location[0] = (cos(az)*x -sin(az)*y) 
+#	o.location[1] = (sin(az)*x +cos(az)*y)            
+#	x = o.location[0]
+#	y = o.location[1]
 	#     x Transform 
-	o.location[1] = ( cos(ax)*y -sin(ax)*z )
-	o.location[2] = ( sin(ax)*y +cos(ax)*z ) 
-	y = o.location[1]
-	z = o.location[2]
+#	o.location[1] = ( cos(ax)*y -sin(ax)*z )
+#	o.location[2] = ( sin(ax)*y +cos(ax)*z ) 
+#	y = o.location[1]
+#	z = o.location[2]
 	#     y-Transform   
-	o.location[0] = (cos(ay)*x +sin(ay)*z) 
-	o.location[2] = (-sin(ay)*x +cos(ay)*z)
-	x = o.location[0]
-	z = o.location[2]
+#	o.location[0] = (cos(ay)*x +sin(ay)*z) 
+#	o.location[2] = (-sin(ay)*x +cos(ay)*z)
+#	x = o.location[0]
+#	z = o.location[2]
+	# combined rotations...
+	o.location[0] = ( cos(ay) + cos(az)  )*x + (  -sin(az)  )*y + (  sin(ay)  )*z
+	o.location[1] = ( sin(az)  )*x + (  cos(ax) + cos(az)  )*y + (  -sin(ax)  )*z
+	o.location[2] = ( -sin(ay) )*x + (  sin(ax)  )*y + ( cos(ax) + cos(ay)  )*z
 	return o
 
 #translate([10,0,0],cube([10,10,10],center=false ))
 #rotate([0,00,90]  )	
+#rotate([0,00,90]  )	
+#rotate([0,00,90]  )	
+#rotate([0,00,90]  )	
+
 #rotate([0,90,00]  )
 #rotate([90,00,00] )
 #rotate([90,90,90] )
 #rotate([45,45,45]	)
 #
+#cylinder(h=10,r=3)
+#rotate( [90,0,90], cylinder(h=10,r=3) ) 
+#rotate([0,0,90],  rotate( [90,0,0], cylinder(h=10,r=3) )   ) 
+#rotate([90,0,0], rotate( [0,0,90], cylinder(h=10,r=3) )   )
 
 # OpenSCAD: scale(v = [x, y, z]) { ... }
 def scale(v=[1.0,1.0,1.0], o=None):
@@ -298,7 +325,11 @@ def scale(v=[1.0,1.0,1.0], o=None):
 	l = o.location
 	o.location = [l[0]*v[0],l[1]*v[1],l[2]*v[2]]
 	bpy.ops.transform.resize(value=v)
-	bpy.ops.object.transform_apply(scale=True)  
+	#bpy.ops.object.transform_apply(scale=True)
+    # not sure if those updates are useful	
+	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+	bpy.context.scene.update()	
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 
 # OpenSCAD: resize(newsize=[30,60,10])  
@@ -309,7 +340,11 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	# TODO: location!!
 	o.select = True
 	o.dimensions=newsize
+	bpy.context.active_object.data.update()
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
+	
+#resize([15,5,20], cube(size=5)	)
 	
 def color( rgba=(1.0,1.0,1.0,1.0), o=None): 
 	if o is None:
@@ -335,6 +370,7 @@ def hull(o1,*objs):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	o.name= "hull(" + o.name + ")"
+	cleanup_object(o)
 	return o
 
 
@@ -353,26 +389,44 @@ def group(o1,*objs):
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
 
+def cleanup_object(o=None):
+	if o is None:	
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')		
+	bpy.ops.mesh.remove_doubles()
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')	
+	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)	
+	bpy.context.scene.update()	
+	return o	
 
 # TODO: apply=False will require a fix to allow for later scaling, etc.
-def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
-	scn = bpy.context.scene
+def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):		
 	#bpy.ops.object.select_all(action = 'DESELECT')
 	#obj_A.select = True
+	# circumvent problem with "CSG failed, exception degenerate edge, Unknown internal error in boolean"
+	cleanup_object(objA)
+	cleanup_object(objB)
+	#
 	boo = objA.modifiers.new('MyBool', 'BOOLEAN')
 	boo.object = objB
 	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
 	# often forgotten: needs to be active!!
-	scn.objects.active = objA
+	bpy.context.scene.objects.active = objA
 	objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
 	if apply is True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
-		scn = bpy.context.scene
-		scn.objects.unlink(objB)
+		bpy.context.scene.objects.unlink(objB)
 	else:
 		objB.hide_select = True
 		objB.hide = True
+    # 
+	cleanup_object(objA)
 	return objA
+
 
 
 def union(o1,*objs, apply=True):
@@ -724,15 +778,16 @@ def HullDemo2():
 
 
 def Demo1():
-	scale([3,3,3],
+	scale([5,5,5], translate([0,0,5],
 		union(
-			rotate( [90,0,90], cylinder(h=10,r=3) )   
-		,   rotate( [90,0,0], cylinder(h=10,r=3) )  
-		,   rotate( [0,0,90], cylinder(h=10,r=3) )   
+			rotate( [90,0,90], cylinder(h=10,r=3,center=true) )   
+		,   rotate( [90,0,0], cylinder(h=10,r=3, center=true) )  
+		,   rotate( [0,0,90], cylinder(h=10,r=3, center=true) )   
 	  )
-	) 
+	)) 
 
 #Demo1()
+
 
 # OpenJSCAD.org Logo :-)	  
 def Demo2():  
@@ -767,7 +822,7 @@ def Demo2b_tripleGrouping():
 				 sphere(r=1.3, center=true)
 			   , cube([2.1,2.1,2.1], center=true)
 		   ))	 
-		   , cube([1,1,5])
+		   , color(lime, cylinder(r=0.1,h=5,center=true))
 		 )
 	 )
 	)
@@ -779,22 +834,23 @@ def Demo2b_tripleGrouping():
 # my original OpenSCAD version: http://www.thingiverse.com/thing:198859
 def FilamentHolderSimple(D,A,b) :
    return union(
-		difference(
+	difference(
 			union(
 			   cylinder(r1 = D/2, r2=D/2-1 , h = b, center = true)
 			 , translate([0,0,-b/2+1] , cylinder(r1 = D/2+2, r2=D/2+1.5,h = 2, center = true))
-			)  
+			)
 		  , cylinder(r = D/2-3, h = b, center = true)
-		) # difference
-	,   difference(
+		)  
+	, difference(
 			union(
 				cylinder(r = A/2+4, h = b, center = true)
 			  , cube([D-4,4,b],center=true) 
 			  , cube([4,D-4,b],center=true) 
 			)
 		  , cylinder(r = A/2, h = b, center = true)
-		)
+		) 
 	)
+  
 
 # Drumm inner diameter in mm
 D = 52
@@ -802,6 +858,10 @@ D = 52
 A = 7  #Actually 6mm
 b=14 # holder height
 #FilamentHolderSimple(D,A,b)
+
+#TODO: Fix error if "union" instead of "group":
+#CSG failed, exception degenerate edge
+#Unknown internal error in boolean
 
 
 def pacman():
