@@ -120,6 +120,8 @@ def listAllObjects():
 def cube(size=(0.0,0.0,0.0), center=False):
 	if type(size) == int:    # support for single size value argument
 		size=(size,size,size)
+	if type(size) == float:    # support for single size value argument
+		size=(size,size,size)		
 	bpy.ops.mesh.primitive_cube_add(location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
@@ -135,9 +137,8 @@ def cube(size=(0.0,0.0,0.0), center=False):
 	#bpy.ops.transform.resize(value=size)
 	#bpy.ops.object.transform_apply(scale=True)
 	if (center==False):
-		bpy.ops.transform.translate(value=(size[0]/2,size[1]/2,size[2]/2))
+		bpy.ops.transform.translate(value=(size[0]/2.0,size[1]/2.0,size[2]/2.0))
 	return o
-
 
 # Construct a cylinder mesh
 # bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=2.0, end_fill_type='NGON', view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -172,7 +173,7 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False, fn=-1):
 	o.data.materials.append(mat)
 	o.color = defColor
 	if center==False:
-		bpy.ops.transform.translate(value=(0,0,h/2))
+		bpy.ops.transform.translate(value=(0.0,0.0,h/2.0))
 	return o
 
 
@@ -251,11 +252,12 @@ def translate( v=(0.0,0.0,0.0), o=None):
 		o = bpy.context.object
 	bpy.ops.object.select_all(action = 'DESELECT')
 	o.select = True
-	bpy.ops.transform.translate(value=v)
+	#bpy.ops.transform.translate(value=v) # gives error: "convertViewVec: called in an invalid context"  as ops uses the view...
+	o.location += Vector(v)
 	#
     # not sure if those updates are useful	
-	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
-	bpy.context.scene.update()	
+#	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+#	bpy.context.scene.update()	
 	bpy.ops.object.transform_apply(location=True) # Apply the object’s transformation to its data
 	return o
 
@@ -272,7 +274,7 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 	ax=radians(a[0]) # a[0]*deg
 	ay=radians(a[1]) # a[1]*deg
 	az=radians(a[2]) # a[2]*deg
-	#print([ax,ay,az])		
+	print(['rotate', a,[ax,ay,az],o.location])		
 	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
 	
 	bpy.ops.transform.rotate(value = ax, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
@@ -280,8 +282,8 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 	bpy.ops.transform.rotate(value = az, axis = (0, 0, 1), constraint_axis = (False, False, True), constraint_orientation = 'GLOBAL')
 
     # not sure if those updates are useful	
-	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
-	bpy.context.scene.update()	
+#	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+#	bpy.context.scene.update()	
 	bpy.ops.object.transform_apply(rotation=True) # Apply the object’s transformation to its data 
 #	
 	# OpenSCAD emulation: need to also rotate location vector.
@@ -306,9 +308,11 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 #	x = o.location[0]
 #	z = o.location[2]
 	# combined rotations...
-	o.location[0] = ( cos(ay) + cos(az)  )*x + (  -sin(az)  )*y + (  sin(ay)  )*z
+#	o.location[0] = ( cos(ay) + cos(az)  )*x + (  -sin(az)  )*y + (  sin(ay)  )*z
+	o.location[0] = ( cos(radians(a[1])) + cos(radians(a[2]))  )*x + (  -sin(radians(a[2]))  )*y + (  sin(radians(a[1]))  )*z
 	o.location[1] = ( sin(az)  )*x + (  cos(ax) + cos(az)  )*y + (  -sin(ax)  )*z
 	o.location[2] = ( -sin(ay) )*x + (  sin(ax)  )*y + ( cos(ax) + cos(ay)  )*z
+	print(['AFTERrotate', a,[ax,ay,az],o.location])	
 	return o
 
 #translate([10,0,0],cube([10,10,10],center=false ))
@@ -339,8 +343,8 @@ def scale(v=[1.0,1.0,1.0], o=None):
 	bpy.ops.transform.resize(value=v)
 	#bpy.ops.object.transform_apply(scale=True)
     # not sure if those updates are useful	
-	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
-	bpy.context.scene.update()	
+#	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+#	bpy.context.scene.update()	
 	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 
@@ -352,7 +356,8 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	# TODO: location!!
 	o.select = True
 	o.dimensions=newsize
-	bpy.context.active_object.data.update()
+#	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
+#	bpy.context.scene.update()	
 	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 	
@@ -416,15 +421,17 @@ def cleanup_object(o=None):
 	bpy.ops.mesh.remove_doubles()
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
-	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)	
+	#bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)	
 	bpy.context.scene.update()	
 	return o	
 
+# booleanOp is used by union(), difference() and intersection()
 # TODO: apply=False will require a fix to allow for later scaling, etc.
 def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):		
 	#bpy.ops.object.select_all(action = 'DESELECT')
 	#obj_A.select = True
 	# circumvent problem with "CSG failed, exception degenerate edge, Unknown internal error in boolean"
+	print(["boolOp", boolOp])
 	cleanup_object(objA)
 	cleanup_object(objB)
 	#
@@ -446,6 +453,7 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 		objB.hide = True
     # 
 	cleanup_object(objA)
+	print("boolOpEND")
 	return objA
 
 
@@ -459,6 +467,13 @@ def union(o1,*objs, apply=True):
 		
 def difference(o1,o2,*objs, apply=True):
 	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE', apply=apply)
+
+#def difference(o1,*objs, apply=True):
+#	res = o1
+#	for obj in objs:
+#		if obj != None:
+#			res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
+#	return res
 
 def intersection(o1,o2,*objs, apply=True):
 	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT', apply=apply)
@@ -766,7 +781,7 @@ def OpenSCADtests():
 	translate(v=(1,2,2))
 	#  and almost OpenSCAD like...
 	difference (
-			   color(red,cube((12,12,4),center=true)), 
+			   color(purple,cube((12,12,4),center=true)), 
 			   cube((6,6,4),center=true)
 			   )
 	translate([55,45,0])			
@@ -777,7 +792,7 @@ def OpenSCADtests():
 			   )
 	translate([-55,45,0])			
 	#
-	color(green, translate([50,0,-10] ,cylinder(h=10,r=2)))
+	color(lime, translate([50,0,-10] ,cylinder(h=10,r=2)))
 	#
 	translate([-50,20,10], cylinder(r=10,h=20) )
 	translate([25,40,6], cylinder(r=10,h=20, center=true) )
@@ -901,40 +916,55 @@ def pacman():
 #pacman()
 
 # a fischertechnik helper
-def ft_nut(L,A,SLOT,H):
+def ft_nut(L=1.0,A=4.0,SLOT=3.0,H=30.0):
 	return union(
-		translate([L/2,0,0],
-		  color(blue,
-			cube([A,SLOT,H+2],center=true)))	
-	,   translate([L/2-A/2,0,0],
+	   translate([(L-A)/2.0,0,0],
           color(red,
-			cylinder(r = (A/2), h = H*2+2,center = true)))
+			cylinder(r = (A/2.0), h = H*2.0+2,center = true)))
+#	The following line causes probs in console and final object...		
+# added translate to fix. seems to be a precision problem with my rotate calculations...
+# STRANGE...			
+#	,	translate([L/2.0 , 0,0],cylinder(r=SLOT/2,h=H+2,center=true))
+#	,	translate([L/2.0 , 0,0], cube([A,SLOT,H+2],center=true))
+	,	translate([L/2.0 +000000000000000000000000000.1, 0,0],
+#		  color(blue,
+			cube([A,SLOT,H+2],center=true))
+#			)	
 	)
 
 # a fischertechnik basic block. incomplete, but serves as a demo for the
 # fixed rotate() behavior: also rotating the location around the center.
 def makeFtBlock():
-	L = 15 # Laenge in mm
-	B = 15 # Breite in mm
-	H = 30 # Hoehe in mm
-	A = 4 # axis diameter
-	SLOT = 3 
-	return translate ([0,0,H/2],
+	L = 15.0 # Laenge in mm
+	B = 15.0 # Breite in mm
+	H = 30.0 # Hoehe in mm
+	A = 4.0 # axis diameter
+	SLOT = 3.0 
+	return translate ([0,0,0],
 		difference(
 			cube([L,B,H],center=true)
 			, union(
 				   rotate([0,0,0]  , ft_nut(L,A,SLOT,H) )
 				 , rotate([0,0,90] , ft_nut(L,A,SLOT,H) )
 				 , rotate([0,0,180], ft_nut(L,A,SLOT,H) )
-				 , rotate([0,0,270] , ft_nut(L,A,SLOT,H) )
+#	The following line causes probs in console and final object...		
+# added translate to fix. seems to be a precision problem with my rotate calculations...		
+				, rotate([0,0,270] , ft_nut(L,A,SLOT,H) )
+#				, translate([0.001,0,0],rotate([0,0,270] , ft_nut(L,A,SLOT,H) ))
 				 # bottom:
 				 , translate([0,0,-7.5] , rotate([90,90,0],  ft_nut(L,A,SLOT,H) ))
 			)
-		)
+		,apply=True)
 	 )	
 
 color(red, makeFtBlock() )
 
+#L = 15 # Laenge in mm
+#B = 15 # Breite in mm
+#H = 30 # Hoehe in mm
+#A = 4 # axis diameter
+#SLOT = 3 		
+#rotate([0,0,270] , ft_nut(L,A,SLOT,H) )					
 						
 ###########################################################################################
 ##
