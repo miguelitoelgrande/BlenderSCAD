@@ -137,7 +137,9 @@ def cube(size=(0.0,0.0,0.0), center=False):
 	#bpy.ops.transform.resize(value=size)
 	#bpy.ops.object.transform_apply(scale=True)
 	if (center==False):
-		bpy.ops.transform.translate(value=(size[0]/2.0,size[1]/2.0,size[2]/2.0))
+		#bpy.ops.transform.translate(value=(size[0]/2.0,size[1]/2.0,size[2]/2.0)) # causes "convertViewVec: called in an invalid context"
+		o.location += Vector( (size[0]/2.0,size[1]/2.0,size[2]/2.0) )
+		bpy.ops.object.transform_apply(location=True) 
 	return o
 
 # Construct a cylinder mesh
@@ -173,7 +175,9 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False, fn=-1):
 	o.data.materials.append(mat)
 	o.color = defColor
 	if center==False:
-		bpy.ops.transform.translate(value=(0.0,0.0,h/2.0))
+		#bpy.ops.transform.translate(value=(0.0,0.0,h/2.0))  # causes "convertViewVec: called in an invalid context"
+		o.location += Vector( (0.0,0.0,h/2.0)  )
+		bpy.ops.object.transform_apply(location=True) 
 	return o
 
 
@@ -465,6 +469,7 @@ def union(o1,*objs, apply=True):
 			res = booleanOp(res,obj, boolOp='UNION', apply=apply)
 	return res
 		
+# TODO: write some "debug" mode grouping instead of really diffing sub-tree
 def difference(o1,o2,*objs, apply=True):
 	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE', apply=apply)
 
@@ -477,6 +482,31 @@ def difference(o1,o2,*objs, apply=True):
 
 def intersection(o1,o2,*objs, apply=True):
 	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT', apply=apply)
+
+# join as a (better?) alternative to union()
+# apply is dummy to mock full union syntax
+def join(o1,*objs, apply=True):
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o1.select = True
+	#cleanup_object(o1)
+	o1.name = 'J('+o1.name
+	bpy.context.scene.objects.active = o1
+	for obj in objs:
+		#cleanup_object(obj)		
+		o1.name = o1.name +','+obj.name
+		obj.select = True
+		#bpy.context.scene.objects.active = o1
+		bpy.ops.object.join()
+		cleanup_object(o1)		
+	o1.name = o1.name + ')'
+	o1.data.name = o1.name
+	#objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
+    # 
+	cleanup_object(o1)
+	return o1
+
+#join(cube(10), cylinder(r=5,h=15), cylinder(r=2.5,h=20))
+#cylinder(r=5,h=15)
 
 
 # OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
@@ -845,7 +875,7 @@ def Demo2():
 	 )
 	)
 
-#Demo2()
+Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -920,17 +950,18 @@ def ft_nut(L=1.0,A=4.0,SLOT=3.0,H=30.0):
 	return union(
 	   translate([(L-A)/2.0,0,0],
           color(red,
-			cylinder(r = (A/2.0), h = H*2.0+2,center = true)))
+			cylinder(r = (A/2.0), h = H*1.2,center = true)))
 #	The following line causes probs in console and final object...		
 # added translate to fix. seems to be a precision problem with my rotate calculations...
 # STRANGE...			
 #	,	translate([L/2.0 , 0,0],cylinder(r=SLOT/2,h=H+2,center=true))
-#	,	translate([L/2.0 , 0,0], cube([A,SLOT,H+2],center=true))
-	,	translate([L/2.0 +000000000000000000000000000.1, 0,0],
+#	,	translate([L/2.0 , 0,0], cube([A,SLOT,H*1.2],center=true))  # leads to: CSG failed, exception extern\carve\lib\triangulator.cpp:899  "didn't manage to link up hole!"
+	,	translate([L/2.0 +000000000000000000000000000.1, 0, 0],
 #		  color(blue,
-			cube([A,SLOT,H+2],center=true))
+			cube([A,SLOT,H*1.2],center=true))
 #			)	
 	)
+
 
 # a fischertechnik basic block. incomplete, but serves as a demo for the
 # fixed rotate() behavior: also rotating the location around the center.
