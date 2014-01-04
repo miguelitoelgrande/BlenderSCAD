@@ -218,16 +218,33 @@ def circle(r=10.0, fill=False, fn=-1):
 	o.data.materials.append(mat)
 	o.color = defColor
 	return o
+	
+def color( rgba=(1.0,1.0,1.0,1.0), o=None): 
+	if o is None:
+		o = bpy.context.object
+	o.color = rgba
+	return o
 
 # OpenSCAD: import_stl("filename.stl", convexity = <val>);
 # TODO: implement convexity...
 def import_stl(filename ,convexity=10):
 	bpy.ops.import_mesh.stl(filepath=filename)
 	o = bpy.context.active_object
+	o.data.materials.append(mat)
+	o.color = defColor
 	return o
 
 #import_stl("O:/BlenderStuff/demo.stl")
 
+
+color(green, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips innen Magnetband.stl"))
+color(yellow, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung aussen.stl"))
+color(purple, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung innen.stl"))
+color(lime, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Halter Magnet.stl"))
+color(blue, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profile Aussen unten Rot.stl"))
+color(red, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profil_1200mm.stl"))
+
+#color(black, import_stl("C:/Users/Nora/Desktop/Michi_Temp/test.stl"))
 
 # extra function, not OpenSCAD
 # export object as STL.
@@ -366,12 +383,6 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	return o
 	
 #resize([15,5,20], cube(size=5)	)
-	
-def color( rgba=(1.0,1.0,1.0,1.0), o=None): 
-	if o is None:
-		o = bpy.context.object
-	o.color = rgba
-	return o
 
 #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
 #   Enclose selected vertices in a convex polyhedron   
@@ -875,7 +886,7 @@ def Demo2():
 	 )
 	)
 
-Demo2()
+#Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -988,7 +999,7 @@ def makeFtBlock():
 		,apply=True)
 	 )	
 
-color(red, makeFtBlock() )
+#color(red, makeFtBlock() )
 
 #L = 15 # Laenge in mm
 #B = 15 # Breite in mm
