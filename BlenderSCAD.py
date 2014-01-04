@@ -33,10 +33,10 @@ import sys
 import bpy
 import bpy_types
 
-from mathutils import *
 import math
-from math import *
-
+#from math import *  # will do this more explicitly to ensure OpenSCAD overrides sin(),etc.
+from mathutils import *  # using Vector type below...
+ 
 
 
 #################################################################
@@ -123,9 +123,13 @@ def listAllObjects():
 	for obj in bpy.data.objects:
  		print(obj.name)	
 
+########################################################
+# Math library functions
 #
 #OpenSCAD has sin, cos, tan, etc based on DEGREES
 #
+pi=math.pi
+
 def sin(deg):
 	return math.sin(math.radians(deg))
 
@@ -147,6 +151,107 @@ def atan(deg):
 def atan2(deg):
 	return math.atan2(math.radians(deg))
 
+# abs, max, min doesnt require math module
+#abs=math.fabs
+#len -> len("abc")
+#mod --> %
+ceil=math.ceil
+exp=math.exp
+floor=math.floor
+ln=math.log # the natural logarithm
+log=math.log # log(x,y)
+sqrt=math.sqrt
+# pow=math.pow  built-in python ...
+
+# round, built-in -> round(x) or round(x,y) 
+#echo(round(5.4)) #-> 5
+#echo(round(5.6)) #-> 6
+
+def sign(x):
+	return ((x > 0) - (x < 0)) 
+
+#echo(sign(-5.0))
+
+
+#TODO:
+#norm=math.norm # eucledian norm
+#norm=numpy.linalg.norm
+#echo(norm([ 1,2,3,4] ))	#5.47723
+
+
+#########################################3
+## echo() and str()
+try:
+    import __builtin__
+except ImportError:
+    import builtins as __builtin__ #Python 3.0
+
+# almost OpenSCAD echo, but concatenating param output without colons and whitespaces.
+# use explicitly if wanted.
+def echo(*args):
+	sys.stdout.write('ECHO: ')  # like print, but no newline to prefix...
+	for a in args:
+		sys.stdout.write(__builtin__.str(a))
+	sys.stdout.write('\n')
+		
+def str(*args):	
+	res=""
+	for a in args:
+		res = res + (__builtin__.str(a))
+	return res
+
+#tests...		
+#echo("Value: ", 123, 'mm')
+#echo(pow(2,2))
+#number=4;
+#echo (str("This is ",number,3," and that's it."));
+
+
+#lookup
+# http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#lookup
+#function get_cylinder_h(p) = lookup(p, [
+# 		[ -200, 5 ],
+# 		[ -50, 20 ],
+# 		[ -20, 18 ],
+# 		[ +80, 25 ],
+# 		[ +150, 2 ]
+# 	]);
+# 
+# for (i = [-100:5:+100]) {
+# 	// echo(i, get_cylinder_h(i));
+# 	translate([ i, 0, -30 ]) cylinder(r1 = 6, r2 = 2, h = get_cylinder_h(i)*3);
+# }
+#
+
+# TODO: search()
+# http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Other_Language_Features#Search
+# The search() function is a general-purpose function to find one or more (or all) occurrences of a value or list of values in a vector, string or more complex list-of-list construct.
+#  search( match_value , string_or_vector [, num_returns_per_match [, index_col_num ] ] ); 
+#  search("a","abcdabcd",0);  --->   [[0,4]]
+#  search(3,[ ["a",1],["b",2],["c",3],["d",4],["a",5],["b",6],["c",7],["d",8],["e",3] ], 0, 1);  -->  [2,8]
+
+def rands(min_value, max_value, value_count, seed_value=-1):
+	import random
+	#min_value 
+	#    Minimum value of random number range
+	#max_value 
+	#    Maximum value of random number range
+	#value_count 
+	#    Number of random numbers to return as a vector
+	#seed_value (optional) 
+	#    Seed value for random number generator for repeatable results. 
+	if seed_value != -1:
+		random.seed(seed_value)
+	res=[]
+	for i in range(0,value_count):
+		res.append( random.uniform( min_value, max_value) )
+	return res
+
+#echo("single rands: ",rands(0,10,1)[0])
+#echo("multi rands: ",rands(0,10,8))
+
+#####################################################################
+## Primitives
 
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -273,14 +378,6 @@ def import_stl(filename ,convexity=10):
 #import_stl("O:/BlenderStuff/demo.stl")
 
 
-#color(green, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips innen Magnetband.stl"))
-#color(yellow, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung aussen.stl"))
-#color(purple, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung innen.stl"))
-#color(lime, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Halter Magnet.stl"))
-#color(blue, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profile Aussen unten Rot.stl"))
-#color(red, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profil_1200mm.stl"))
-
-
 # extra function, not OpenSCAD
 # export object as STL.
 def export_stl(filename, o=None, ascii=False):
@@ -321,15 +418,25 @@ def translate( v=(0.0,0.0,0.0), o=None):
 # OpenSCAD: rotate(a = deg, v = [x, y, z]) { ... }
 # Rotation in Blender: http:#pymove3d.sudile.com/stationen/kc_objekt_rotation/rotation.html#eulerrotation
 # todo: implement optional v?
+#TODO: fully implement  http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#rotate
+# Rotates its child a degrees about the origin of the coordinate system or around an arbitrary axis. The argument names are optional if the arguments are given in the same order as specified above.
+# When a rotation is specified for multiple axes then the rotation is applied in the following order: x, y, z.
+# rotate(a = deg, v = [x, y, z]) { ... }
+# rotate(a=[0,180,0]) { ... }
+# The above example will rotate your object 180 degrees around the 'y' axis.
+# The optional argument 'v' allows you to set an arbitrary axis about which the object will be rotated.
+# Example with arbitrary origin.
+# rotate(a=45, v=[1,1,0]) { ... }
+
 def rotate( a=[0.0,0.0,0.0], o=None):
 	if o is None:
 		o = bpy.context.object
 	bpy.ops.object.select_all(action = 'DESELECT')
 	o.select = True
 	# deg = (pi/180)  # one degree is 2*pi/360
-	ax=radians(a[0]) # a[0]*deg
-	ay=radians(a[1]) # a[1]*deg
-	az=radians(a[2]) # a[2]*deg
+	ax=math.radians(a[0]) # a[0]*deg
+	ay=math.radians(a[1]) # a[1]*deg
+	az=math.radians(a[2]) # a[2]*deg
 	print(['rotate', a,[ax,ay,az],o.location])		
 	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
 	
@@ -367,7 +474,7 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 #	o.location[0] = ( cos(ay) + cos(az)  )*x + (  -sin(az)  )*y + (  sin(ay)  )*z
 	cos = math.cos
 	sin = math.sin
-	   
+	radians= math.radians
 	o.location[0] = ( cos(radians(a[1])) + cos(radians(a[2]))  )*x + (  -sin(radians(a[2]))  )*y + (  sin(radians(a[1]))  )*z
 	o.location[1] = ( sin(az)  )*x + (  cos(ax) + cos(az)  )*y + (  -sin(ax)  )*z
 	o.location[2] = ( -sin(ay) )*x + (  sin(ax)  )*y + ( cos(ax) + cos(ay)  )*z
@@ -421,28 +528,6 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	return o
 	
 #resize([15,5,20], cube(size=5)	)
-
-#   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
-#   Enclose selected vertices in a convex polyhedron   
-def hull(o1,*objs):
-	o = union(o1,*objs)
-	bpy.context.scene.objects.active = o
-	o.select=True
-	if bpy.context.active_object.mode is not 'EDIT':
-		bpy.ops.object.mode_set(mode = 'EDIT')
-	#print("VERTICES: *********")	
-	#for v in o.data.vertices:
-	#	v.select = True
-		#print (v)
-	#bpy.ops.mesh.select_all(action='SELECT')
-	bpy.ops.mesh.convex_hull(use_existing_faces=False)
-	bpy.ops.mesh.remove_doubles()
-	if bpy.context.active_object.mode is not 'OBJECT': 
-		bpy.ops.object.mode_set(mode = 'OBJECT')
-	o.name= "hull(" + o.name + ")"
-	o.data.name= "hull(" + o.data.name + ")"
-	cleanup_object(o)
-	return o
 
 
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
@@ -556,6 +641,29 @@ def join(o1,*objs, apply=True):
 
 #join(cube(10), cylinder(r=5,h=15), cylinder(r=2.5,h=20))
 #cylinder(r=5,h=15)
+
+
+#   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
+#   Enclose selected vertices in a convex polyhedron   
+def hull(o1,*objs):
+	o = union(o1,*objs)
+	bpy.context.scene.objects.active = o
+	o.select=True
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	#print("VERTICES: *********")	
+	#for v in o.data.vertices:
+	#	v.select = True
+		#print (v)
+	#bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.convex_hull(use_existing_faces=False)
+	bpy.ops.mesh.remove_doubles()
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
+	o.name= "hull(" + o.name + ")"
+	o.data.name= "hull(" + o.data.name + ")"
+	cleanup_object(o)
+	return o
 
 
 # OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
@@ -1051,6 +1159,31 @@ def FilamentHolderSimple(D,A,b) :
 		) 
 	)
   
+
+
+def demo_random_spheres():
+	seed=42
+	random_vect=rands(5,15,4,seed) # get a vector of 4 numbers
+	echo( "Random Vector: ",random_vect)
+	sphere(r=5)
+	for i in range(0,3):
+# todo: need to implement more rotate param compatibility
+#		rotate(360*i/4 , translate([10+random_vect[i],0,0] ,
+		rotate([360*i/4,0,0] , translate([10+random_vect[i],0,0] ,
+	     sphere(r=random_vect[i]/2) ))
+
+	 
+#demo_random_spheres()
+
+	
+def pow_demo():
+	for i in range(0,5): 
+		translate([i*25,0,0],
+			cylinder(h = pow(2,i)*5, r=10))
+		echo (i," : ",pow(2,i))
+
+#pow_demo()
+
 
 # Drumm inner diameter in mm
 D = 52
