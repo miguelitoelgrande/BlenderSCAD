@@ -29,11 +29,15 @@
 ## bpy.ops.console.clear(history=True)
 
 import os
+import sys
 import bpy
 import bpy_types
 
 from mathutils import *
+import math
 from math import *
+
+
 
 #################################################################
 ## BlenderSCAD core functionality
@@ -72,6 +76,11 @@ navy = (0.00,0.00,0.50,0)
 blue = (0.00,0.00,1.00,0)
 teal = (0.00,0.50,0.50,0)
 aqua = (0.00,1.00,1.00,0)
+
+# for full color list:
+#sys.path.append("<path to>/BlenderSCAD") 
+#from blenderscad_colors import *
+
 
 # default color for object creators below...
 defColor = (1.0,1.0,0.1,0)
@@ -113,6 +122,30 @@ clearAllObjects()
 def listAllObjects():
 	for obj in bpy.data.objects:
  		print(obj.name)	
+
+#
+#OpenSCAD has sin, cos, tan, etc based on DEGREES
+#
+def sin(deg):
+	return math.sin(math.radians(deg))
+
+def cos(deg):
+	return math.cos(math.radians(deg))
+
+def tan(deg):
+	return math.tan(math.radians(deg))
+
+def acos(deg):
+	return math.acos(math.radians(deg))
+
+def asin(deg):
+	return math.asin(math.radians(deg))
+
+def atan(deg):
+	return math.atan(math.radians(deg))
+
+def atan2(deg):
+	return math.atan2(math.radians(deg))
 
 
 # Construct a cube mesh 
@@ -218,10 +251,13 @@ def circle(r=10.0, fill=False, fn=-1):
 	o.data.materials.append(mat)
 	o.color = defColor
 	return o
+
 	
-def color( rgba=(1.0,1.0,1.0,1.0), o=None): 
+def color( rgba=(1.0,1.0,1.0, 0), o=None): 
 	if o is None:
 		o = bpy.context.object
+	if len(rgba) == 3:
+		rgba=(rgba[0],rgba[1],rgba[2],0)
 	o.color = rgba
 	return o
 
@@ -237,14 +273,13 @@ def import_stl(filename ,convexity=10):
 #import_stl("O:/BlenderStuff/demo.stl")
 
 
-color(green, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips innen Magnetband.stl"))
-color(yellow, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung aussen.stl"))
-color(purple, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung innen.stl"))
-color(lime, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Halter Magnet.stl"))
-color(blue, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profile Aussen unten Rot.stl"))
-color(red, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profil_1200mm.stl"))
+#color(green, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips innen Magnetband.stl"))
+#color(yellow, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung aussen.stl"))
+#color(purple, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung innen.stl"))
+#color(lime, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Halter Magnet.stl"))
+#color(blue, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profile Aussen unten Rot.stl"))
+#color(red, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profil_1200mm.stl"))
 
-#color(black, import_stl("C:/Users/Nora/Desktop/Michi_Temp/test.stl"))
 
 # extra function, not OpenSCAD
 # export object as STL.
@@ -330,6 +365,9 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 #	z = o.location[2]
 	# combined rotations...
 #	o.location[0] = ( cos(ay) + cos(az)  )*x + (  -sin(az)  )*y + (  sin(ay)  )*z
+	cos = math.cos
+	sin = math.sin
+	   
 	o.location[0] = ( cos(radians(a[1])) + cos(radians(a[2]))  )*x + (  -sin(radians(a[2]))  )*y + (  sin(radians(a[1]))  )*z
 	o.location[1] = ( sin(az)  )*x + (  cos(ax) + cos(az)  )*y + (  -sin(ax)  )*z
 	o.location[2] = ( -sin(ay) )*x + (  sin(ax)  )*y + ( cos(ax) + cos(ay)  )*z
@@ -600,6 +638,48 @@ def polygon(points, paths=[], fill=False):
 # triangle with two triangular holes...
 #polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]])
 
+
+
+
+#OpenSCAD polyhedron()
+#polyhedron(points = [ [x, y, z], ... ], faces = [ [p1, p2, p3..], ... ], convexity = N);
+#polyhedron(points = [ [x, y, z], ... ], triangles = [ [p1, p2, p3..], ... ], convexity = N);
+#DEPRECATED: polyhedron(triangles=[]) will be removed in future releases. Use polyhedron(faces=[]) instead
+def polyhedron(points, faces=[], triangles=[], fill=False):
+	if len(triangles)>0 and len(faces) == 0:
+		print("DEPRECATED: polyhedron(triangles=[]) will be removed in future releases. Use polyhedron(faces=[]) instead")
+		faces=triangles
+	# Create mesh and object
+	me = bpy.data.meshes.new('p')
+	o = bpy.data.objects.new('p', me)
+	o.data.materials.append(mat)
+	o.color = defColor
+	o.location = (0.0,0.0,0.0)
+	o.show_name = True
+	bpy.context.scene.objects.link(o) 	# Link object to scene
+	verts=[] 
+	for p in points:
+		verts.append([p[0],p[1],p[2]])
+	# print({'verts':verts} ,  {'faces': faces} )
+	me.from_pydata(verts, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
+	# Update mesh with new data
+	me.update(calc_edges=True)		
+	bpy.context.scene.objects.active = o
+	o.select = True
+	# Note: switching mode would fail before mesh is defined and object selected...
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')	
+	for el in o.data.vertices: el.select = True
+	for el in o.data.edges: el.select = True
+	if fill is True:
+		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
+			bpy.ops.mesh.fill_grid()
+		except RuntimeError:
+			bpy.ops.mesh.fill() 	
+	bpy.ops.mesh.flip_normals()
+	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
+	bpy.ops.object.mode_set(mode = 'OBJECT')
+	return o
 
 
 
@@ -886,7 +966,7 @@ def Demo2():
 	 )
 	)
 
-#Demo2()
+Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -908,7 +988,47 @@ def Demo2b_tripleGrouping():
 	)
 	  
 #Demo2b_tripleGrouping()
-	
+
+
+# source: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#color	
+def MulticolorSin3D():
+	for i in range (0,36):
+		for j in range(0,36):
+			color([0.5+sin(10*i)/2, 0.5+sin(10*j)/2, 0.5+sin(10*(i+j))/2] ,
+			translate([i,j,0],
+				cube(size=[1, 1, 11+10*cos(10*i)*sin(10*j)] )
+			))
+
+#MulticolorSin3D()
+
+
+
+# 
+def polyhedron_demo():
+	return polyhedron(points = [
+		[0, -10, 60], [0, 10, 60], [0, 10, 0], [0, -10, 0], [60, -10, 60], [60, 10, 60], 
+		[10, -10, 50], [10, 10, 50], [10, 10, 30], [10, -10, 30], [30, -10, 50], [30, 10, 50]
+		], 
+	faces = [
+		[0,3,2],  [0,2,1],  [4,0,5],  [5,0,1],  [5,2,4],  [4,2,3],
+			[6,8,9],  [6,7,8],  [6,10,11],[6,11,7], [10,8,11],
+			[10,9,8], [3,0,9],  [9,0,6],  [10,6, 0],[0,4,10],
+			[3,9,10], [3,10,4], [1,7,11], [1,11,5], [1,8,7],  
+			[2,8,1],  [8,2,11], [5,11,2]
+		]
+	)
+
+#polyhedron_demo()
+
+def pyramid_demo():
+	return polyhedron(
+		points=[ [10,10,0],[10,-10,0],[-10,-10,0],[-10,10,0], # the four points at base
+			[0,0,10]  ],                                 # the apex point 
+		triangles=[ [0,1,4],[1,2,4],[2,3,4],[3,0,4],     #  each triangle side
+			[1,0,3],[2,1,3] ]                         # two triangles for square base
+ )
+
+#pyramid_demo()
 
 # My Filament Holder (rough version without rounded corners)
 # my original OpenSCAD version: http://www.thingiverse.com/thing:198859
