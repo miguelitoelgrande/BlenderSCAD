@@ -111,6 +111,7 @@ So, especially when you are using the mentioned "Live Edit" option, you may want
 <li>sphere
 <li>circle
 <li>polygon
+<li>polyhedron
 <li>
 <li>translate
 <li>rotate
