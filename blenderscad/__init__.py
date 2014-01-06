@@ -17,7 +17,14 @@ import bpy
 defColor = (1.0,1.0,0.1,0)
 
 # emulate OpenSCAD $fn
-fn=32  # default precision: every 10 degrees a segment..
+fn=36  # default precision: every 10 degrees a segment..
+
+#TODO: OpenSCAD Special variables
+#$fa - minimum angle  $fn = 360 / $fa    / default: $fa = 12 -> segments = 30
+#$fs - minimum size   default: 1 
+#$fn - number of fragments  | override of $fa/$fs , default = 0 
+
+
 
 if bpy.context.active_object is not None:
 	if bpy.context.active_object.mode is not 'OBJECT': 
