@@ -183,7 +183,7 @@ def translate( v=(0.0,0.0,0.0), o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(location=True) # Apply the object’s transformation to its data
+	bpy.ops.object.transform_apply(location=True) # Apply the objectâ€™s transformation to its data
 	return o
 
 		
@@ -222,7 +222,7 @@ def rotate( a=[0.0,0.0,0.0], o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(rotation=True) # Apply the object’s transformation to its data 
+	bpy.ops.object.transform_apply(rotation=True) # Apply the objectâ€™s transformation to its data 
 #	
 	# OpenSCAD emulation: need to also rotate location vector.
 	# some relocation via matrix multiplications (hopefully correct)
@@ -268,6 +268,24 @@ def rotate( a=[0.0,0.0,0.0], o=None):
 #rotate([90,0,0], rotate( [0,0,90], cylinder(h=10,r=3) )   )
 
 
+
+# OpenSCAD: mirror([ x, y, z ]) {...}
+# Mirrors the child element on a plane through the origin. 
+# The argument to mirror() is the normal vector of a plane intersecting the origin through which to mirror the object.
+def mirror(a=[1,0,0], o=None):
+	if o is None:
+		o = bpy.context.object
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o.select = True
+	axis = (a[0]==1, a[1]==1, a[2]==1)
+	bpy.ops.transform.mirror( constraint_axis = axis, constraint_orientation = 'GLOBAL')
+	#.ops.transform.mirror( constraint_axis = (False, True, False), constraint_orientation = 'GLOBAL')
+	return o
+
+#color(red, rotate([0,0,10], cube([3,2,1])));
+#mirror([1,0,0], translate([1,0,0], rotate([0,0,10], cube([3,2,1]))));
+
+
 # OpenSCAD: scale(v = [x, y, z]) { ... }
 def scale(v=[1.0,1.0,1.0], o=None):
 	if o is None:
@@ -282,7 +300,7 @@ def scale(v=[1.0,1.0,1.0], o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the objectâ€™s transformation to its data
 	return o
 
 # OpenSCAD: resize(newsize=[30,60,10])  
@@ -295,7 +313,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	o.dimensions=newsize
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the objectâ€™s transformation to its data
 	return o
 	
 #resize([15,5,20], cube(size=5)	)
