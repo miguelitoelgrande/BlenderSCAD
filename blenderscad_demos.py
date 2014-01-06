@@ -6,8 +6,10 @@
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-##import sys
-##sys.path.append("O:/BlenderStuff") 
+
+#import sys
+#sys.path.append("O:/BlenderStuff") 
+#from blenderscad.shapes import *
 
 from mathutils import *  # using Vector type below...
 
@@ -27,17 +29,17 @@ from blenderscad.shapes import *   # optional
 #  which might have changed externally...
 # can be commented out or removed if you do not modify blenderscad libs during this blender session.
 # This was a bit easier when this all was in a single file ;-)
-#import imp
-#imp.reload(blenderscad)
-#imp.reload(blenderscad.math)
-#imp.reload(blenderscad.core)
-#imp.reload(blenderscad.primitives)
-#imp.reload(blenderscad.shapes)
-#imp.reload(blenderscad.colors)
-#### need to also redo the "import *" part...
-#from blenderscad import *  # contains blenderscad core, primitives, math and colors
-#from blenderscad.shapes import *   # optional 
-###################
+import imp
+imp.reload(blenderscad)
+imp.reload(blenderscad.math)
+imp.reload(blenderscad.core)
+imp.reload(blenderscad.primitives)
+imp.reload(blenderscad.shapes)
+imp.reload(blenderscad.colors)
+### need to also redo the "import *" part...
+from blenderscad import *  # contains blenderscad core, primitives, math and colors
+from blenderscad.shapes import *   # optional 
+##################
 
 
 #str1 = "this is string example....wow!!!";
@@ -52,14 +54,12 @@ from blenderscad.shapes import *   # optional
 ## Tests
 #################################################################   
 
-
-
+## Clear the open .blend file!!!
 clearAllObjects()
-
 
 # changing global "environment variables"
 #
-blenderscad.fn=32  # emulate OpenSCAD's $fn
+blenderscad.fn=72  # emulate OpenSCAD's $fn
 blenderscad.defColor=yellow
 
 
@@ -79,7 +79,6 @@ def search( match_value , string_or_vector , num_returns_per_match=1 , index_col
 
 echo (search("a","abcdabcd",0));  #--->   [[0,4]]
 #  search(3,[ ["a",1],["b",2],["c",3],["d",4],["a",5],["b",6],["c",7],["d",8],["e",3] ], 0, 1);  -->  [2,8]
-
 
 
 
@@ -288,9 +287,40 @@ def demo_random_spheres():
 #		rotate(360*i/4 , translate([10+random_vect[i],0,0] ,
 		rotate([360*i/4,0,0] , translate([10+random_vect[i],0,0] ,
 	     sphere(r=random_vect[i]/2) ))
-
 	 
 #demo_random_spheres()
+
+
+#OpenSCAD' intersection_for() is only a work around. As standard "for" implies a union of its content, this one is a combination of
+# for() and intersection() statements.
+# Not really needed as we currently do not support implicit union()'s, but to demonstrate, how it would be rewritten.
+# see: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#Intersection_For_Loop
+def intersection_for_demo():
+	# example 1 - loop over a range:
+	tmp = None		
+	#intersection_for(n = [1 : 6])
+	for n in range(1,7):
+		tmp = intersection(
+			rotate([0, 0, n * 60],
+				translate([5,0,0],
+					sphere(r=12)))
+		, tmp);
+	translate([-30,0,0], tmp)		
+	# example 2 - rotation:
+	#intersection_for(i = [ ]
+	tmp = None
+	rnge = [ [  0,  0,   0],
+ 			[ 10, 20, 300],
+ 			[200, 40,  57],
+ 			[ 20, 88,  57] ]
+	for i in rnge:
+		tmp = intersection(
+			rotate(i ,
+			cube([100, 20, 20], center = true))
+			, tmp);
+
+#intersection_for_demo()
+
 
 def pacman():
 	blenderscad.fn=128
@@ -406,3 +436,4 @@ def makeFtBlock():
 #SLOT = 3 		
 #rotate([0,0,270] , ft_nut(L,A,SLOT,H) )					
 						
+
