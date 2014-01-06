@@ -25,7 +25,6 @@ fn=36  # default precision: every 10 degrees a segment..
 #$fn - number of fragments  | override of $fa/$fs , default = 0 
 
 
-
 if bpy.context.active_object is not None:
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -37,12 +36,13 @@ from blenderscad.core import *
 from blenderscad.primitives import *
 
 import imp
+imp.reload(blenderscad.math)
 imp.reload(blenderscad.core)
 imp.reload(blenderscad.primitives)
 
+#from blenderscad.colors import *
+from blenderscad.math import * 
 from blenderscad.core import *
 from blenderscad.primitives import *
-
-
 
 
