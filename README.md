@@ -11,7 +11,7 @@ Coming from OpenSCAD or Tinkercad, there are some issues at the first glance:
 <li>Blender's UI is way too dark to provide this warm and welcome feeling of Tinkercad or OpenSCAD :-)
 </ul>
  
-This is currently rather a proposal or a proof of concept implementation as I'm just familiarizing myself with Blender and Python.
+This is currently rather a proof of concept implementation as I'm just familiarizing myself with Blender and Python.
 <br/>
 However, my results are encouraging enough to share them:
 <img src="imgs/ScreenshotBlender.png">
@@ -69,7 +69,6 @@ logodemo()
 <h2>Instructions</h2>
 Have Blender 2.69 installed. SAVE all open work first, better go to a clean document.
 Run the BlenderSCAD file and uncomment the demo section you want to try out.
-Later versions will split this file into standard library functions and own definitions.
 For the moment, this is the easiest way. Can also be saved as part of a .blend file.
 Again, caution, the upper part of the script will first wipe all objects of the open scene.
 
@@ -78,7 +77,8 @@ There are two ways to execute the script in Blender:
 <h4>via Blender's built in text editor</h4>
 
 This way, Blender is your OpenSCAD-like IDE. You can even have the code compile while typing
-(Check "Live Edit" in the editor) 
+(Check "Live Edit" in the editor)
+Load <i>"BlenderSCAD.py"</i> into your text editor.
 
 <h4>via Python Console</h4>
 
@@ -91,6 +91,17 @@ exec(compile(open(filename).read(), filename, 'exec'))
 
 The second option is preferred if you use an external editor for the code.
 
+<h4>Recent Update:</h4>
+As the BlenderSCAD.py script was meanwhile growing too much, I've split the project into a python module <i>blenderscad</i> 
+and a demo script <i>blenderscad_demo.py</i>.
+You can either set a path in the demo script to the folder containing the blenderscad directory or place it where Blender's module path:
+<pre>
+[installpath]\blender-2.69\2.69\scripts\modules\blenderscad
+</pre>
+<br/>
+The old BlenderSCAD.py file will remain in place, but won't be longer maintained. Might be handy for some tests (e.g. on mobile devices?)
+
+<h4>UI Look and Feel</h4>
 You can use my <b>startup.blend</b> and <b>userpref.blend</b> files from the config subfolder optionally.
 These will provide my Blender Theme adjustments and screen area setup as shown in the screenshot above.
 Place the content of the "config" folder into the Blender's config folder:
@@ -99,8 +110,12 @@ Place the content of the "config" folder into the Blender's config folder:
 </pre>
 if you are using Windows (Otherwise, refer to the Blender documentation).
 
-A last word of "warning": Blender files grow with all unlinked objects. It will garbage clean whenever you save and reopen the document.
-So, especially when you are using the mentioned "Live Edit" option, you may want to do this frequently. And also pay attention to where your source file is saved.
+
+Blender files usually grow with all unlinked objects. It will garbage clean whenever you save and reopen the document.
+In order to make the "Live Edit" option work reasonable, I explicitly force the deletion of intermediate objects (e.g. before union).
+Therefore, the files should stay cleaner than while editing a blender file in the usual way.
+<br/>
+A last word of "warning": Pay attention to where your source file is saved.
 <i>ALT+S</i> will save the file in the editor, <i>CTRL+S</i> will save the "materialized" version of that file inside blender. Changes may be lost if you resync.
 
 
