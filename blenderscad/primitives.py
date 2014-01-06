@@ -24,7 +24,7 @@ if mat is None:
 	
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
-def cube(size=(0.0,0.0,0.0), center=False):
+def cube(size=(1.0,1.0,1.0), center=False):
 	if type(size) == int:    # support for single size value argument
 		size=(size,size,size)
 	if type(size) == float:    # support for single size value argument
@@ -200,6 +200,25 @@ def polygon(points, paths=[], fill=False):
 #polygon(points=[ [8,-8],[8,8],[-8,8] ])
 # triangle with two triangular holes...
 #polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]], fill=true)
+
+
+
+# OpenSCAD 2D convenience  square(size,center) ,  square([width,height],center)
+def square(size=(1.0,1.0), center=False, fill=False):
+	if type(size) == int:    # support for single size value argument
+		size=(size,size)
+	if type(size) == float:    # support for single size value argument
+		size=(size,size)
+	if center== True:
+		x1=-size[0]/2.0; y1=-size[1]/2.0; x2=size[0]/2.0; y2=size[1]/2.0; 
+	else:
+		x1=0; y1=-0; x2=size[0]; y2=size[1]; 
+	points=[ [x1,y1],[x2,y1],[x2,y2],[x1,y2] ]				
+	return polygon(points, paths=[[0,1,2,3]], fill = fill)
+
+#square ([2,2],center = true);
+#square (2,center = false, fill=true);
+#square ([2,6],center = true);
 
 
 #OpenSCAD polyhedron()
