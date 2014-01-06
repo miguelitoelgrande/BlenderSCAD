@@ -383,8 +383,7 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 	echo("boolOpEND")
 	return objA
 
-
-
+	
 def union(o1,*objs, apply=True):
 	res = o1
 	for obj in objs:
@@ -403,9 +402,14 @@ def difference(o1,o2,*objs, apply=True):
 #			res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
 #	return res
 
-def intersection(o1,o2,*objs, apply=True):
-	return booleanOp(o1,union(o2,*objs), boolOp='INTERSECT', apply=apply)
-
+def intersection(o1,*objs, apply=True):
+## Remark: cannot use union here!! need to intersect all...
+	res = o1
+	for obj in objs:
+		if obj != None:
+			res = booleanOp(res,obj, boolOp='INTERSECT', apply=apply)
+	return res
+	
 # join as a (better?) alternative to union()
 # apply is dummy to mock full union syntax
 def join(o1,*objs, apply=True):
