@@ -2,16 +2,6 @@
 # Color name definitions as defined in OpenSCAD (and SVG)
 # by Michael Mlivoncic, 2013
 #
-# Usage:
-#import sys
-#sys.path.append("./modules") 
-#from blenderscad.colors import *
-
-#
-# some colors... 
-#black = (0.00,0.00,0.00,0)
-#silver = (0.75,0.75,0.75,0)
-#gray = (0.50,0.50,0.50,0)
 
 aliceblue = (0.94,0.97,1.00,0)
 antiquewhite = (0.98,0.92,0.84,0)
@@ -160,8 +150,5 @@ white = (1.00,1.00,1.00,0)
 whitesmoke = (0.96,0.96,0.96,0)
 yellow = (1.00,1.00,0.00,0)
 yellowgreen = (0.60,0.80,0.20,0)
-
-
-
 
 

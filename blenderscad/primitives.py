@@ -4,7 +4,7 @@
 ## by Michael Mlivoncic, 2013
 #
 import bpy
-import bpy_types
+#import bpy_types
 
 from mathutils import *  # using Vector type below...
 

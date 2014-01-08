@@ -38,11 +38,12 @@
 ## BlenderSCAD core functionality
 #################################################################   
 import bpy
+import bpy_types
 
 import sys
 
 import math
-from mathutils import *  # using Vector type below...
+from mathutils import Vector  # using Vector type below...
 import blenderscad
 from blenderscad.math import *  # true, false required...
 
@@ -139,17 +140,38 @@ def import_stl(filename ,convexity=10):
 	o.color = blenderscad.defColor
 	return o
 
-import_stl("O:/BlenderStuff/demo.stl")
+#import_stl("O:/BlenderStuff/demo.stl")
 
 
-#color(green, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips innen Magnetband.stl"))
-#color(yellow, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung aussen.stl"))
-#color(purple, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Clips Netzbefestigung innen.stl"))
-#color(lime, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Halter Magnet.stl"))
-#color(blue, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profile Aussen unten Rot.stl"))
-#color(red, import_stl("C:/Users/Nora/Desktop/Michi_Temp/Profil_1200mm.stl"))
+# OpenSCAD: import_dxf() ...
+def import_dxf(fileNameDXF):
+	import io_import_scene_dxf
+	io_import_scene_dxf.theCodec = 'ascii'
+	sections = io_import_scene_dxf.readDxfFile(fileNameDXF)
+	print("Building geometry")
+	io_import_scene_dxf.buildGeometry(sections['ENTITIES'].data)
+	return bpy.context.scene.objects.active
 
+#o = import_dxf("O:/BlenderStuff/test.dxf")
+#linear_extrude(10, o)
 
+#todo: 
+# OpenSCAD: import(file)
+# A string containing the path to the STL or DXF file.
+def import_(file):
+	import os.path
+	extension = os.path.splitext(file)[1].lower()
+	o =None
+	if extension == '.dxf':
+		return import_dxf(file)
+	if extension == '.stl':
+		return import_stl(file)
+	return None
+
+#import_("O:/BlenderStuff/test.dxf")
+#import_("O:/BlenderStuff/test.stl")
+		
+	
 # extra function, not OpenSCAD
 # export object as STL.
 def export_stl(filename, o=None, ascii=False):
@@ -160,15 +182,33 @@ def export_stl(filename, o=None, ascii=False):
 
 #export_stl("O:/BlenderStuff/demo.stl", cube([10,20,15]) )
 
-#import sys
-#sys.path.append("O:/BlenderStuff/BlenderSCAD") 
-#from bpy.addons import io_import_scene_dxf
-#readAndBuildDxfFile("O:/BlenderStuff/test.dxf")
-#cube([10,10,20])			
-#bpy.ops.import_scene.autocad_dxf(filepath="O:/BlenderStuff/test.dxf")
-#o = bpy.context.active_object
-#o.name="DXFtest"
 
+def export_dxf(filename, o=None, ascii=False):
+	if o is None:
+		o = bpy.context.active_object
+	import io_export_dxf.export_dxf
+	# 	### TODO TODO: these settings dont lead to an export...
+	# http://fossies.org/dox/blender-2.69/export__dxf_8py_source.html
+	settings = {'onlySelected': False , 'verbose': True, 'projectionThrough': None , 'entitylayer_from':'obj.name'
+				, 'entitycolor_from': 'obj.color' , 'entityltype_from':'BYBLOCK', 'mesh_as': True}
+	#
+	io_export_dxf.export_dxf.exportDXF( bpy.context, filePathDXF, settings )
+	return o
+
+	
+def export(file, o=None):
+	if o is None:
+		o = bpy.context.active_object
+	import os.path
+	extension = os.path.splitext(file)[1].lower()
+	if extension == '.dxf':
+		return export_dxf(file)
+	if extension == '.stl':
+		return export_stl(file)
+
+#export("O:/BlenderStuff/export.dxf")
+#export("O:/BlenderStuff/export.stl")
+		
 
 
 # OpenSCAD: translate(v = [x, y, z]) { ... }
@@ -183,7 +223,7 @@ def translate( v=(0.0,0.0,0.0), o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(location=True) # Apply the objectâ€™s transformation to its data
+	bpy.ops.object.transform_apply(location=True) # Apply the object’s transformation to its data
 	return o
 
 		
@@ -193,28 +233,38 @@ def translate( v=(0.0,0.0,0.0), o=None):
 # rotate(a=45, v=[1,1,0]) { ... }  # The optional argument 'v' allows you to set an arbitrary axis about which the object will be rotated.
 #
 #TODO: fully implement  http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#rotate
-# todo: implement optional v?
 # Rotation in Blender: http:#pymove3d.sudile.com/stationen/kc_objekt_rotation/rotation.html#eulerrotation
 # Rotates its child "a" degrees about the origin of the coordinate system or around an arbitrary axis. 
 #
 # todo: need to implement more rotate param compatibility
 #		rotate(360*i/4 , translate([10+random_vect[i],0,0] ,
 
-def rotate( a=[0.0,0.0,0.0], o=None):
+def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
+	o = None
+	for arg in args: # look for object in args...	    
+		if type(arg) is  bpy_types.Object:
+			o=arg
+	if type(a) == int or type(a) == float:    # support for single size value argument
+		a=[a*v[0],a*v[1],a*v[2]]
+		print(a)
+	#old code	
 	if o is None:
-		o = bpy.context.object
+		o = bpy.context.object	
 	bpy.ops.object.select_all(action = 'DESELECT')
 	o.select = True
 	cos = math.cos
 	sin = math.sin
 	radians= math.radians
 	#
-	ax=radians(a[0]) # a[0]*deg # one degree is 2*pi/360
+	ax=radians(a[0]) # a[0]*deg # one degree is 2*pi/360	
 	ay=radians(a[1]) # a[1]*deg
 	az=radians(a[2]) # a[2]*deg
-	echo(['rotate', a,[ax,ay,az],o.location])		
+	#echo(['rotate', a,[ax,ay,az],o.location])		
 	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
-	
+	#
+	#
+	#
+	#
 	bpy.ops.transform.rotate(value = ax, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = ay, axis = (0, 1, 0), constraint_axis = (False, True, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = az, axis = (0, 0, 1), constraint_axis = (False, False, True), constraint_orientation = 'GLOBAL')
@@ -222,7 +272,7 @@ def rotate( a=[0.0,0.0,0.0], o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(rotation=True) # Apply the objectâ€™s transformation to its data 
+	bpy.ops.object.transform_apply(rotation=True) # Apply the object’s transformation to its data 
 #	
 	# OpenSCAD emulation: need to also rotate location vector.
 	# some relocation via matrix multiplications (hopefully correct)
@@ -300,7 +350,7 @@ def scale(v=[1.0,1.0,1.0], o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the objectâ€™s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 
 # OpenSCAD: resize(newsize=[30,60,10])  
@@ -313,7 +363,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	o.dimensions=newsize
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the objectâ€™s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 	
 #resize([15,5,20], cube(size=5)	)
