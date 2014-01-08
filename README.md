@@ -125,11 +125,13 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>cylinder
 <li>sphere
 <li>circle
+<li>square
 <li>polygon
 <li>polyhedron
 <li>
 <li>translate
 <li>rotate
+<li>mirror
 <li>scale
 <li>resize
 <li>color
@@ -139,11 +141,9 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>intersection
 <li>
 <li>
-<li>linear_extrude
+<li>*linear_extrude
 <li>rotate_extrude
 <li>hull
-<li>*group
-<li>*round_edges
 <li>
 <li>import_stl
 <li>*export_stl
@@ -155,5 +155,26 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>roundedBox
 <li>
 <li>fn ($fn)
+<li>string functions: echo, str, *search
+<li>math functions: lookup, rands, sign, sin , cos,...
 </ul>
 
+
+<h3>Extras</h3>
+<ul>
+<li>join
+<li>group
+<li>round_edges
+<li>
+<li>+several demos
+<li>...
+</ul>
+
+<h3>Missing</h3>
+<ul>
+<li>minkowski
+<li>projection
+<li>norm
+<li>multimatrix
+<li>...
+</ul>
