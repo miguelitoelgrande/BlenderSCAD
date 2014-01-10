@@ -9,10 +9,10 @@
 
 import blenderscad 
 
-import imp
-imp.reload(blenderscad)
-imp.reload(blenderscad.core)
-imp.reload(blenderscad.primitives)
+#import imp
+#imp.reload(blenderscad)
+#imp.reload(blenderscad.core)
+#imp.reload(blenderscad.primitives)
 
 
 blenderscad.initns( globals() ) # try to add BlenderSCAD names to current namespace .. as if they would be in this file...
