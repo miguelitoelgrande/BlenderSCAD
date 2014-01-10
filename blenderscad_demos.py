@@ -7,15 +7,33 @@
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
 
-#import sys
-#sys.path.append("O:/BlenderStuff") 
+import sys
+sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
-from mathutils import *  # using Vector type below...
+from mathutils import Vector
 
-import blenderscad 
-from blenderscad import *  # contains blenderscad core, primitives, math and colors
-from blenderscad.shapes import *   # optional 
+import blenderscad
+#from blenderscad.shapes import *   # optional 
+
+
+# This block is just for debugging: to reload all blenderscad module 
+#  which might have changed externally...
+# can be commented out or removed if you do not modify blenderscad libs during this blender session.
+# This was a bit easier when this all was in a single file ;-)
+import imp
+imp.reload(blenderscad)
+#imp.reload(blenderscad.math)
+imp.reload(blenderscad.core)
+imp.reload(blenderscad.primitives)
+imp.reload(blenderscad.impexp)
+#imp.reload(blenderscad.shapes)
+##################
+
+blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
+
+
+
 
 ## List loaded blenderscad related (sub)modules
 #for mod in sys.modules.values():
@@ -25,29 +43,13 @@ from blenderscad.shapes import *   # optional
 #		print (mod)
 
 
-# This block is just for debugging: to reload all blenderscad module 
-#  which might have changed externally...
-# can be commented out or removed if you do not modify blenderscad libs during this blender session.
-# This was a bit easier when this all was in a single file ;-)
-import imp
-imp.reload(blenderscad)
-imp.reload(blenderscad.math)
-imp.reload(blenderscad.core)
-imp.reload(blenderscad.primitives)
-imp.reload(blenderscad.shapes)
-imp.reload(blenderscad.colors)
-### need to also redo the "import *" part...
-from blenderscad import *  # contains blenderscad core, primitives, math and colors
-from blenderscad.shapes import *   # optional 
-##################
-
-
 #str1 = "this is string example....wow!!!";
 #str2 = "exam";
 #
 #print str1.find(str2);
 #print str1.find(str2, 10);
 #print str1.find(str2, 40);
+
 
 
 #################################################################
@@ -76,11 +78,8 @@ def search( match_value , string_or_vector , num_returns_per_match=1 , index_col
 		i = string_or_vector.find(match_value, i + 1) 
 	return listindex
 
-
-echo (search("a","abcdabcd",0));  #--->   [[0,4]]
+#echo (search("a","abcdabcd",0));  #--->   [[0,4]]
 #  search(3,[ ["a",1],["b",2],["c",3],["d",4],["a",5],["b",6],["c",7],["d",8],["e",3] ], 0, 1);  -->  [2,8]
-
-
 
 #	
 # A few OpenSCAD like operations... need to substitute brackets
@@ -191,7 +190,7 @@ def Demo2b_tripleGrouping():
 #Demo2b_tripleGrouping()
 
 
-
+# Demo with several polygons.
 def polygon_demo():
 	# triangle
 	polygon(points=[ [8,-8],[8,8],[-8,8] ])
@@ -210,8 +209,6 @@ def polygon_demo():
 #polygon_demo()
 
 
-
-# 
 def polyhedron_demo():
 	return polyhedron(points = [
 		[0, -10, 60], [0, 10, 60], [0, 10, 0], [0, -10, 0], [60, -10, 60], [60, 10, 60], 
@@ -238,8 +235,9 @@ def pyramid_demo():
 
 #pyramid_demo()
 
-
+# Produce a multicolor 3D sin surface
 # source: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#color	
+# slow!
 def MulticolorSin3D():
 	for i in range (0,36):
 		for j in range(0,36):
@@ -321,6 +319,13 @@ def intersection_for_demo():
 
 #intersection_for_demo()
 
+#
+def surface_demo():
+	# use folder where the .dxf fuile is located
+	import os; os.chdir("O:/BlenderStuff/examples")
+	surface(file = "./surface.dat", center = true, convexity = 5);
+
+#surface_demo()
 
 def pacman():
 	blenderscad.fn=128
@@ -436,4 +441,67 @@ def makeFtBlock():
 #SLOT = 3 		
 #rotate([0,0,270] , ft_nut(L,A,SLOT,H) )					
 						
+						
+					
+## TODO: exporter...
+#  cam = settings['projectionThrough']
+#  if cam == None:
+#  mw = mathutils.Matrix()
+#  mw.identity()
+#  elif cam in projectionMapping.keys():
+#  projection = mathutils.Matrix.OrthoProjection(projectionMapping[cam], 4)
+#  mw = projection
+#  else: # get camera with given name
+#  c = context.scene.objects[cam]
+#  mw = getCameraMatrix(c)
 
+#DXFExporter
+#http://fossies.org/dox/blender-2.69/export__dxf_8py_source.html
+#def io_export_dxf.export_dxf.exportDXF( context, 	filePath, settings )
+#if settings['onlySelected'] is True:
+#context ~ bpy.context
+
+
+def TODO_exportDXF():
+	filePathDXF = "O:/BlenderStuff/test2.dxf"
+	import os
+	print ( os.getcwd())
+	import io_export_dxf.export_dxf
+	#
+	settings = {'onlySelected': False , 'verbose': True, 'projectionThrough': None , 'entitylayer_from':'obj.name'
+			, 'entitycolor_from': 'obj.color' , 'entityltype_from':'BYBLOCK', 'mesh_as': True}
+	#
+	io_export_dxf.export_dxf.exportDXF( bpy.context, filePathDXF, settings )
+	#io_import_scene_dxf
+	#export_stl("./test2.stl")
+
+#TODO_importDXF()
+
+# OpenSCAD: import_dxf() ...
+#def import_dxf(fileNameDXF):
+#	import io_import_scene_dxf
+#	io_import_scene_dxf.theCodec = 'ascii'
+#	sections = io_import_scene_dxf.readDxfFile(fileNameDXF)
+#	print("Building geometry")
+#	io_import_scene_dxf.buildGeometry(sections['ENTITIES'].data)
+#	return bpy.context.scene.objects.active
+
+#o = import_dxf("O:/BlenderStuff/test.dxf")
+#linear_extrude(10, o)
+
+
+#import_("O:/BlenderStuff/test.dxf")
+#import_("O:/BlenderStuff/test.stl")
+#color(lime, import_stl("./Demo.stl"))
+
+
+
+##########################################################################
+
+color(rands(0,1,3)) # random color last object. to see "FINISH" :-)
+
+# print timestamp and finish - sometimes it is easier to see differences in console then :-)
+import time
+import datetime
+st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
+echo ("FINISH", st)

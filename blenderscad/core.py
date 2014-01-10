@@ -1,4 +1,4 @@
-# blenderscad.core
+﻿# blenderscad.core
 # Color name definitions as defined in OpenSCAD (and SVG)
 #
 # by Michael Mlivoncic, 2013
@@ -44,18 +44,20 @@ import sys
 
 import math
 from mathutils import Vector  # using Vector type below...
-import blenderscad
-from blenderscad.math import *  # true, false required...
+
+import blenderscad # for "global" variables fn, defColor,...
+#from blenderscad.math import *  # true, false required...
 
 # need to setup/reference our default material
 mat = bpy.data.materials.get('useObjectColor')
 if mat is None:
 	mat=bpy.data.materials.new('useObjectColor')
 	mat.use_object_color=1
-	
 
-# remove everything after experiments...
-def clearAllObjects():
+
+# clearAllObjects(): empty whole scene, useful during development
+# It tries to really remove the objects, not only unlink, so the .blend files won't grow with the garbage.
+def clearAllObjects():	
 	if bpy.context.active_object is not None:
 		if bpy.context.active_object.mode is not 'OBJECT': 
 			bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -72,12 +74,11 @@ def clearAllObjects():
 			bpy.context.scene.objects.unlink(o)
 			bpy.data.objects.remove(o)
 		
-
 # CAUTION! clear workspace 
-clearAllObjects()   
+#clearAllObjects()
 
 
-# print all objects
+# list all Blender objects for debugging purposes
 def listAllObjects():
 	for obj in bpy.data.objects:
  		print(obj.name)	
@@ -130,86 +131,6 @@ def color( rgba=(1.0,1.0,1.0, 0), o=None):
 # color(lime, cube(20) )	
 # color((1.0,0,0))
 
-	
-# OpenSCAD: import_stl("filename.stl", convexity = <val>);
-# TODO: implement convexity...
-def import_stl(filename ,convexity=10):
-	bpy.ops.import_mesh.stl(filepath=filename)
-	o = bpy.context.active_object
-	o.data.materials.append(mat)
-	o.color = blenderscad.defColor
-	return o
-
-#import_stl("O:/BlenderStuff/demo.stl")
-
-
-# OpenSCAD: import_dxf() ...
-def import_dxf(fileNameDXF):
-	import io_import_scene_dxf
-	io_import_scene_dxf.theCodec = 'ascii'
-	sections = io_import_scene_dxf.readDxfFile(fileNameDXF)
-	print("Building geometry")
-	io_import_scene_dxf.buildGeometry(sections['ENTITIES'].data)
-	return bpy.context.scene.objects.active
-
-#o = import_dxf("O:/BlenderStuff/test.dxf")
-#linear_extrude(10, o)
-
-#todo: 
-# OpenSCAD: import(file)
-# A string containing the path to the STL or DXF file.
-def import_(file):
-	import os.path
-	extension = os.path.splitext(file)[1].lower()
-	o =None
-	if extension == '.dxf':
-		return import_dxf(file)
-	if extension == '.stl':
-		return import_stl(file)
-	return None
-
-#import_("O:/BlenderStuff/test.dxf")
-#import_("O:/BlenderStuff/test.stl")
-		
-	
-# extra function, not OpenSCAD
-# export object as STL.
-def export_stl(filename, o=None, ascii=False):
-	if o is None:
-		o = bpy.context.active_object
-	bpy.ops.export_mesh.stl(filepath=filename, ascii=ascii)
-	return o
-
-#export_stl("O:/BlenderStuff/demo.stl", cube([10,20,15]) )
-
-
-def export_dxf(filename, o=None, ascii=False):
-	if o is None:
-		o = bpy.context.active_object
-	import io_export_dxf.export_dxf
-	# 	### TODO TODO: these settings dont lead to an export...
-	# http://fossies.org/dox/blender-2.69/export__dxf_8py_source.html
-	settings = {'onlySelected': False , 'verbose': True, 'projectionThrough': None , 'entitylayer_from':'obj.name'
-				, 'entitycolor_from': 'obj.color' , 'entityltype_from':'BYBLOCK', 'mesh_as': True}
-	#
-	io_export_dxf.export_dxf.exportDXF( bpy.context, filePathDXF, settings )
-	return o
-
-	
-def export(file, o=None):
-	if o is None:
-		o = bpy.context.active_object
-	import os.path
-	extension = os.path.splitext(file)[1].lower()
-	if extension == '.dxf':
-		return export_dxf(file)
-	if extension == '.stl':
-		return export_stl(file)
-
-#export("O:/BlenderStuff/export.dxf")
-#export("O:/BlenderStuff/export.stl")
-		
-
 
 # OpenSCAD: translate(v = [x, y, z]) { ... }
 def translate( v=(0.0,0.0,0.0), o=None):
@@ -223,7 +144,7 @@ def translate( v=(0.0,0.0,0.0), o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(location=True) # Apply the object�s transformation to its data
+	bpy.ops.object.transform_apply(location=True) # Apply the object's transformation to its data
 	return o
 
 		
@@ -245,8 +166,7 @@ def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
 		if type(arg) is  bpy_types.Object:
 			o=arg
 	if type(a) == int or type(a) == float:    # support for single size value argument
-		a=[a*v[0],a*v[1],a*v[2]]
-		print(a)
+		a=[a*v[0],a*v[1],a*v[2]]		
 	#old code	
 	if o is None:
 		o = bpy.context.object	
@@ -261,18 +181,13 @@ def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
 	az=radians(a[2]) # a[2]*deg
 	#echo(['rotate', a,[ax,ay,az],o.location])		
 	#o.rotation_euler = ( old[0]+ax , old[1]+ay, old[2]+ az)
-	#
-	#
-	#
-	#
 	bpy.ops.transform.rotate(value = ax, axis = (1, 0, 0), constraint_axis = (True, False, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = ay, axis = (0, 1, 0), constraint_axis = (False, True, False), constraint_orientation = 'GLOBAL')
 	bpy.ops.transform.rotate(value = az, axis = (0, 0, 1), constraint_axis = (False, False, True), constraint_orientation = 'GLOBAL')
-	
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(rotation=True) # Apply the object�s transformation to its data 
+	bpy.ops.object.transform_apply(rotation=True) # Apply the object’s transformation to its data 
 #	
 	# OpenSCAD emulation: need to also rotate location vector.
 	# some relocation via matrix multiplications (hopefully correct)
@@ -283,22 +198,26 @@ def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
 	o.location[2] = ( sin(ax)*y +cos(ax)*z ) 
 	y = o.location[1]
 	z = o.location[2]
+	for i in range(0,2):	o.location[i]=round(o.location[i] , 2); 	
 	#     y-Transform   
 	o.location[0] = (cos(ay)*x +sin(ay)*z) 
 	o.location[2] = (-sin(ay)*x +cos(ay)*z)
 	x = o.location[0]
 	z = o.location[2]
+	for i in range(0,2):	o.location[i]=round(o.location[i] , 2); 	
 	#     z-Transform  
 	o.location[0] = (cos(az)*x -sin(az)*y) 
 	o.location[1] = (sin(az)*x +cos(az)*y)            
 	x = o.location[0]
-	y = o.location[1]
+	y = o.location[1]	
+	for i in range(0,2):	o.location[i]=round(o.location[i] , 2); 	
+	bpy.ops.object.transform_apply(location=True)
 	# combined rotations...
 # All in one...
 #	o.location[0] = ( cos(radians(a[1])) + cos(radians(a[2]))  )*x + (  -sin(radians(a[2]))  )*y + (  sin(radians(a[1]))  )*z
 #	o.location[1] = ( sin(az)  )*x + (  cos(ax) + cos(az)  )*y + (  -sin(ax)  )*z
 #	o.location[2] = ( -sin(ay) )*x + (  sin(ax)  )*y + ( cos(ax) + cos(ay)  )*z
-	echo(['AFTERrotate', a,[ax,ay,az],o.location])	
+	#echo(['AFTERrotate', a,[ax,ay,az],o.location])	
 	return o
 
 #translate([10,0,0],cube([10,10,10],center=false ))
@@ -350,7 +269,7 @@ def scale(v=[1.0,1.0,1.0], o=None):
     # not sure if those updates are useful	
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the object�s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 
 # OpenSCAD: resize(newsize=[30,60,10])  
@@ -363,7 +282,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	o.dimensions=newsize
 #	bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)
 #	bpy.context.scene.update()	
-	bpy.ops.object.transform_apply(scale=True) # Apply the object�s transformation to its data
+	bpy.ops.object.transform_apply(scale=True) # Apply the object’s transformation to its data
 	return o
 	
 #resize([15,5,20], cube(size=5)	)
@@ -387,79 +306,99 @@ def group(o1,*objs):
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
 
+# saw a hint that remesh may fix some boolean ops probs..
+def remesh( o=None, apply=True):
+	if o is None:	
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o
+	#bpy.ops.object.select_all(action = 'DESELECT')
+	#o.select = True
+	rem = o.modifiers.new('Remesh', 'REMESH')
+	rem.mode = "SHARP"  # BLOCKS, SMOOTH
+	rem.scale = 0.9
+	rem.octree_depth = 8.0
+	rem.sharpness = 1.000
+	rem.threshold = 1.000
+	rem.use_smooth_shade = False
+	rem.use_remove_disconnected = True
+	# often forgotten: needs to be active!!
+	bpy.context.scene.objects.active = o
+	if apply==True:
+		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Remesh')
+	o.name = 'rm('+o.name+')'
+	o.data.name = 'rm('+o.data.name+')'	
+	return o
 
-def cleanup_object(o=None):
+
+#-----------------------------------------------------------------------------
+# from: http://blenderartists.org/forum/archive/index.php/t-278694.html
+#remove duplicates v1.3
+#best way to remove duplicates, just select the objects you want the duplicates removed, then run this scrpit
+def remove_duplicates():
+	for obj in bpy.context.selected_objects:
+		if obj.type == 'MESH':
+			bpy.data.scenes[0].objects.active = obj # make obj active to do operations on it
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # set 3D View to Object Mode (probably redundant)
+			bpy.ops.object.mode_set(mode='EDIT', toggle=False) # set 3D View to Edit Mode
+			bpy.context.tool_settings.mesh_select_mode = [False, False, True] # set to face select in 3D View Editor
+			bpy.ops.mesh.select_all(action='SELECT') # make sure all faces in mesh are selected
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # very silly, you have to be in object mode to select faces!!
+
+			found = set([]) # set of found sorted vertices pairs
+
+			for face in obj.data.polygons:
+				facevertsorted = sorted(face.vertices[:]) # sort vertices of the face to compare later
+				if str(facevertsorted) not in found: # if sorted vertices are not in the set
+					found.add(str(facevertsorted)) # add them in the set
+					obj.data.polygons[face.index].select = False # deselect faces i want to keep
+
+			bpy.ops.object.mode_set(mode='EDIT', toggle=False) # set to Edit Mode AGAIN
+			bpy.ops.mesh.delete(type='FACE') # delete double faces
+			bpy.ops.mesh.select_all(action='SELECT')
+			bpy.ops.mesh.normals_make_consistent(inside=False) # recalculate normals
+			bpy.ops.mesh.remove_doubles(threshold=0.0001, use_unselected=False) #remove doubles
+			bpy.ops.mesh.normals_make_consistent(inside=False) # recalculate normals (this one or two lines above is redundant)
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # set to Object Mode AGAIN
+	return obj
+	
+def cleanup_object(o=None,removeDoubles=False,subdivide=False, normalsRecalcOut=False):
+	#echo("cleanup", [removeDoubles, subdivide, normalsRecalcOut])	
 	if o is None:	
 		o = bpy.context.scene.objects.active
 	else:
 		bpy.context.scene.objects.active = o
 	if bpy.context.active_object.mode is not 'EDIT':
-		bpy.ops.object.mode_set(mode = 'EDIT')		
-	bpy.ops.mesh.remove_doubles()
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	if normalsRecalcOut:
+		bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
+	#bpy.ops.mesh.fill_holes()
+	if removeDoubles:
+		bpy.ops.mesh.remove_doubles()
+	if subdivide:  # could fix probs with boolean Difference modifier..
+		bpy.ops.mesh.subdivide(number_cuts=9) # 4 pieces in each direction
+	# TODO: subdivide:
+	#    number_cuts (int in [1, inf], (optional)) – Number of Cuts
+	#    smoothness (float in [0, inf], (optional)) – Smoothness, Smoothness factor.
+	#    fractal (float in [0, inf], (optional)) – Fractal, Fractal randomness factor.
+	#    corner_cut_pattern (enum in ['PATH', 'INNER_VERTEX', 'FAN'], (optional)) – Corner Cut Pattern, Topology pattern to use to fill a face after cutting across its corner
+	#		
+	# found: https://github.com/CGCookie/script-bakery/blob/master/scripts/tests/exportMeshProBuilder.py
+	# select nGons
+	#bpy.ops.mesh.select_by_number_vertices(number=4, type='GREATER')
+	#bpy.ops.mesh.select_by_number_vertices(type='OTHER')
+	# convert nGons to triangles
+#	bpy.ops.mesh.quads_convert_to_tris(use_beauty=True)
+	# convert triangles to quads, not pretty but is better than holes in the mesh.
+#	bpy.ops.mesh.tris_convert_to_quads(limit=0.698132, uvs=False, vcols=False, sharp=False, materials=False)
+	# return to object mode
+	#
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
 	#bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)	
 	bpy.context.scene.update()	
 	return o	
 
-# booleanOp is used by union(), difference() and intersection()
-# TODO: apply=False will require a fix to allow for later scaling, etc.
-def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):		
-	#bpy.ops.object.select_all(action = 'DESELECT')
-	#obj_A.select = True
-	# circumvent problem with "CSG failed, exception degenerate edge, Unknown internal error in boolean"
-	echo(["boolOp", boolOp])
-	cleanup_object(objA)
-	cleanup_object(objB)
-	#
-	boo = objA.modifiers.new('MyBool', 'BOOLEAN')
-	boo.object = objB
-	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
-	# often forgotten: needs to be active!!
-	bpy.context.scene.objects.active = objA
-	objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
-	objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
-	if apply is True:
-		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
-		mesh = objB.data
-		bpy.context.scene.objects.unlink(objB)	
-		bpy.data.objects.remove(objB)
-		bpy.data.meshes.remove(mesh)
-	else:
-		objB.hide_select = True
-		objB.hide = True
-    # 
-	cleanup_object(objA)
-	echo("boolOpEND")
-	return objA
-
-	
-def union(o1,*objs, apply=True):
-	res = o1
-	for obj in objs:
-		if obj != None:
-			res = booleanOp(res,obj, boolOp='UNION', apply=apply)
-	return res
-		
-# TODO: write some "debug" mode grouping instead of really diffing sub-tree
-def difference(o1,o2,*objs, apply=True):
-	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE', apply=apply)
-
-#def difference(o1,*objs, apply=True):
-#	res = o1
-#	for obj in objs:
-#		if obj != None:
-#			res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
-#	return res
-
-def intersection(o1,*objs, apply=True):
-## Remark: cannot use union here!! need to intersect all...
-	res = o1
-	for obj in objs:
-		if obj != None:
-			res = booleanOp(res,obj, boolOp='INTERSECT', apply=apply)
-	return res
-	
 # join as a (better?) alternative to union()
 # apply is dummy to mock full union syntax
 def join(o1,*objs, apply=True):
@@ -469,12 +408,13 @@ def join(o1,*objs, apply=True):
 	o1.name = 'J('+o1.name
 	bpy.context.scene.objects.active = o1
 	for obj in objs:
-		#cleanup_object(obj)		
-		o1.name = o1.name +','+obj.name
-		obj.select = True
-		#bpy.context.scene.objects.active = o1
-		bpy.ops.object.join()
-		cleanup_object(o1)		
+		if obj is not None:			
+			#cleanup_object(obj)		
+			o1.name = o1.name +','+obj.name
+			obj.select = True
+			#bpy.context.scene.objects.active = o1
+			bpy.ops.object.join()
+			cleanup_object(o1)		
 	o1.name = o1.name + ')'
 	o1.data.name = o1.name
 	#objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
@@ -484,6 +424,100 @@ def join(o1,*objs, apply=True):
 
 #join(cube(10), cylinder(r=5,h=15), cylinder(r=2.5,h=20))
 #cylinder(r=5,h=15)
+	
+# booleanOp is used by union(), difference() and intersection()
+# TODO: apply=False will require a fix to allow for later scaling, etc.
+def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):		
+	#bpy.ops.object.select_all(action = 'DESELECT')
+	#obj_A.select = True
+	# circumvent problem with "CSG failed, exception degenerate edge, Unknown internal error in boolean"
+	#echo(["boolOp", boolOp])
+#	if boolOp=='DIFFERENCE':
+#		cleanup_object(objA, subdivide=False)	
+#	else:
+#		cleanup_object(objA)
+	#remesh(o=objA)
+#	cleanup_object(objB)
+	#remesh(o=objB)
+	#
+	boo = objA.modifiers.new('MyBool', 'BOOLEAN')
+	boo.object = objB
+	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
+	# often forgotten: needs to be active!!
+	bpy.context.scene.objects.active = objA
+	#objA.name = boolOp[0]+'('+objA.name+','+objB.name+')'
+	#objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
+	if apply is True:
+		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBool')
+		mesh = objB.data
+		bpy.context.scene.objects.unlink(objB)	
+		bpy.data.objects.remove(objB)
+		bpy.data.meshes.remove(mesh)
+	else:
+		objB.hide_select = True
+		objB.hide = True
+#	cleanup_object(objA, removeDoubles=True)
+	#echo("boolOpEND")
+	#bpy.context.scene.update()	
+	return objA
+
+	
+def union(o1,*objs, apply=True):
+	res = o1
+	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	tmp=res.name
+	for obj in objs:
+		if obj != None:
+			tmp=tmp+","+obj.name
+			#cleanup_object(obj, removeDoubles=True, subdivide=False)			
+			res = booleanOp(res,obj, boolOp='UNION', apply=apply)	
+	res.name = 'u('+tmp+')'
+	res.data.name = 'u('+tmp+')'
+	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	return res
+		
+# TODO: write some "debug" mode grouping instead of really diffing sub-tree
+#def difference(o1,o2,*objs, apply=True):
+#	return booleanOp(o1,union(o2,*objs), boolOp='DIFFERENCE', apply=apply)
+
+def difference(o1,*objs, apply=True):
+	res = o1
+	cleanup_object(o1, subdivide=True)	
+	tmp=res.name	
+	to = None
+	for obj in objs:
+		if obj != None:
+			tmp=tmp+","+obj.name
+			cleanup_object(obj, removeDoubles=True, subdivide=False)	
+			#res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
+			if to is None:
+				to = obj
+			else:
+				to = join(to,obj)
+				#to = booleanOp(obj,to, boolOp='UNION', apply=apply)	
+	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)			
+	res.name = 'd('+tmp+')'
+	res.data.name = 'd('+tmp+')'
+	cleanup_object(res, removeDoubles=True, subdivide=False)
+	return res
+
+	
+def intersection(o1,*objs, apply=True):
+## Remark: cannot use union here!! need to intersect all...
+	res = o1
+	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	tmp=res.name
+	for obj in objs:
+		if obj != None:
+			tmp=tmp+","+obj.name
+			#cleanup_object(obj, removeDoubles=True, subdivide=False)
+			res = booleanOp(res,obj, boolOp='INTERSECT', apply=apply)
+	res.name = 'i('+tmp+')'
+	res.data.name = 'i('+tmp+')'
+	#cleanup_object(res, removeDoubles=True, subdivide=False)	
+	return res
+	
+
 
 
 #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
@@ -514,7 +548,7 @@ def hull(o1,*objs):
 # OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
 # see WIKI: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/2D_to_3D_Extrusion
 # TODO: convexity and center currently ignored...
-def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
+def linear_extrude(height, o=None , center=True, convexity=-1, twist=0):
 	if o is None:
 		o = bpy.context.object
 	bpy.context.scene.objects.active = o
@@ -551,6 +585,7 @@ def linear_extrude(height, o=None , center=true, convexity=-1, twist=0):
 # This emulation would also swallow 3D objects ;-)
 # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
 # Wiki on Blender Spin: http://de.wikibooks.org/wiki/Blender_Dokumentation:_Spin_und_SpinDup
+# example007.scad shows params file= and layer= -> not implemented, using import_dxf() instead
 def rotate_extrude(o=None, fn=-1):	
 	segments = fn if fn != -1 else blenderscad.fn # globals()["fn"]
 	#print(segments)
@@ -609,8 +644,11 @@ def rotate_extrude(o=None, fn=-1):
 
 
 # an extra not present in OpenSCAD... using Blender's "bevel" Modifier
-def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180, apply=True ,o=None):
-	scn = bpy.context.scene 
+def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180,o=None, apply=True ):
+	if o is None:	
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o	
 	#bpy.ops.object.select_all(action = 'DESELECT')
 	#o.select = True
 	bev = o.modifiers.new('MyBevel', 'BEVEL')
@@ -619,7 +657,7 @@ def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180, apply=
 	bev.use_only_vertices= verts_only
 	bev.angle_limit = angle_limit
 	# often forgotten: needs to be active!!
-	scn.objects.active = o
+	bpy.context.scene.objects.active = o
 	if apply==True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyBevel')
 	o.name = 'rnd('+o.name+')'

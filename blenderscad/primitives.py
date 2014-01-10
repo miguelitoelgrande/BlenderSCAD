@@ -6,21 +6,13 @@
 import bpy
 #import bpy_types
 
-from mathutils import *  # using Vector type below...
+from mathutils import Vector
 
 import blenderscad # for "global" variables fn, defColor,...
-from blenderscad.math import *  # true, false required...
+#from blenderscad.math import *  # true, false required...
 
-#default layers for all objects
-mylayers = [False]*20
-mylayers[0] = True
-
-# need to setup our default material
-mat = bpy.data.materials.get('useObjectColor')
-if mat is None:
-	mat=bpy.data.materials.new('useObjectColor')
-	mat.use_object_color=1
-	
+mylayers=blenderscad.mylayers
+mat=blenderscad.mat
 	
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -94,7 +86,7 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False, d=-1, d1=-1, d2=-1, f
 
 # OpenSCAD: sphere(r=1, d=-1)   
 # bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, size=1.0, view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False,   
-def sphere(r=1, d=-1, center=true, fn=-1):
+def sphere(r=1, d=-1, center=True, fn=-1):
 	segments = fn if fn != -1 else blenderscad.fn # globals()["fn"]
 	if d != -1 :
 		  r= d/2;
@@ -114,7 +106,7 @@ def sphere(r=1, d=-1, center=true, fn=-1):
 
 # Construct a circle
 ## OpenSCAD: circle(r = <val>);
-def circle(r=10.0, fill=False, fn=-1):
+def circle(r=10.0, fill=False, center=True, fn=-1):
 	segments = fn if fn != -1 else blenderscad.fn # globals()["fn"]
 	if fill is False:    
 		fill_type = 'NOTHING'
@@ -237,9 +229,10 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene
-	verts=[] 
-	for p in points:
-		verts.append([p[0],p[1],p[2]])
+	verts=points
+	#verts=[] 
+	#for p in points:
+	#	verts.append([p[0],p[1],p[2]])
 	# print({'verts':verts} ,  {'faces': faces} )
 	me.from_pydata(verts, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
 	# Update mesh with new data

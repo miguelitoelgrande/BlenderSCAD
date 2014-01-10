@@ -5,7 +5,6 @@
 #
 
 import math 
-from mathutils import *  # using Vector type below...
 
 ########################################################
 # Math library functions

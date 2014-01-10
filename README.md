@@ -145,8 +145,9 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>rotate_extrude
 <li>hull
 <li>
-<li>import_stl
-<li>*export_stl
+<li>surface
+<li>import_, import_stl , import_dxf
+<li>export, export_dxf, export_stl
 <li>
 <li>hexagon
 <li>octagon
