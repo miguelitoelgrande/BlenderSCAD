@@ -6,12 +6,14 @@
 from mathutils import Vector  # using Vector type below...
 
 import blenderscad 
-from blenderscad import *  # contains blenderscad core, primitives, math and colors
+
+blenderscad.initns( globals() ) # try to add BlenderSCAD names to current namespace .. as if they would be in this file...
+
 
 ## Clear the open .blend file!!!
 #clearAllObjects()
 
-## ------------------------------------------
+###### End of Header ##############################################################################
 
 def example002():
 
@@ -35,4 +37,12 @@ def example002():
 
 example002()
 
+###### Begin of Footer ##############################################################################
+color(rands(0,1,3)) # random color last object. to see "FINISH" :-)
+
+# print timestamp and finish - sometimes it is easier to see differences in console then :-)
+import time
+import datetime
+st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
+echo ("FINISH", st)
 
