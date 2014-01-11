@@ -9,11 +9,10 @@
 
 import blenderscad 
 
-
-#import imp
-#imp.reload(blenderscad)
-#imp.reload(blenderscad.core)
-#imp.reload(blenderscad.primitives)
+# import imp
+# imp.reload(blenderscad)
+# imp.reload(blenderscad.core)
+# imp.reload(blenderscad.primitives)
 
 
 blenderscad.initns( globals() ) # try to add BlenderSCAD names to current namespace .. as if they would be in this file...
@@ -24,33 +23,28 @@ clearAllObjects()
 
 ###### End of Header ##############################################################################
 
-#OpenSCAD' intersection_for() is only a work around. As standard "for" implies a union of its content, this one is a combination of
-# for() and intersection() statements.
-# Not really needed as we currently do not support implicit union()'s, but to demonstrate, how it would be rewritten.
-# see: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#Intersection_For_Loop
 
+def step(l, mod, child):
+	children=len(child)
+	for i in range(0,children):
+		translate([ l*(i - (children-1)/2), 0, 0 ], child[(i+mod) % children] )
+	return group(child[0],*child[1:])
+    
 
-# intersection_for(i = [
-# [0, 0, 0],
-# [10, 20, 300],
-# [200, 40, 57],
-# [20, 88, 57]
-# ])
-# rotate(i) cube([100, 20, 20], center = true)
-
-# example 2 - rotation:
-#intersection_for(i = [ ]
-tmp = None
-rnge = [ [  0,  0,   0],
-		[ 10, 20, 300],
-		[200, 40,  57],
-		[ 20, 88,  57] ]
-for i in rnge:
-	tmp = intersection(
-		rotate(i ,
-		cube([100, 20, 20], center = true))
-		, tmp);
-
+for i in range(1,5):  # 1..4
+	# need to explicitly generate the child nodes as array first...
+	objs=[]
+	objs.append(sphere(30))
+	objs.append(cube(60, true) )
+	objs.append( cylinder(r = 30, h = 50, center = true) )
+	objs.append(   
+        union(
+            cube(45, true)
+            , rotate([45, 0, 0], cube(50, true) )
+            , rotate([0, 45, 0], cube(50, true) )
+            , rotate([0, 0, 45], cube(50, true) )
+		))	
+	translate([0, -250+i*100, 0], step(100, i, objs) )
 
 ###### Begin of Footer ##############################################################################
 color(rands(0,1,3)) # random color last object. to see "FINISH" :-)
@@ -60,5 +54,4 @@ import time
 import datetime
 st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
 echo ("FINISH", st)
-
-
+  
