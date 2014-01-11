@@ -8,6 +8,9 @@ import bpy
 import blenderscad
 #from blenderscad import *  # contains blenderscad core, primitives, math and colors
 
+
+mat = blenderscad.mat
+	
 	
 # OpenSCAD: import_stl("filename.stl", convexity = <val>);
 # TODO: implement convexity...
@@ -31,7 +34,7 @@ def fill_object(o):
 	except RuntimeError:
 		bpy.ops.mesh.fill() 	
 	bpy.ops.mesh.flip_normals()
-	bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
+	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 
 # OpenSCAD: import_dxf() ...
@@ -110,7 +113,7 @@ def export(file, o=None):
 # ported from OpenSCAD by Michael Mlivoncic
 ## ------------------------------------------
 # Credits: surface is ported from surface code of OpenSCAD
-def surface(file, center=False, convexity=1):
+def surface(file, center=False, convexity=1):	
 	l=0 ; data=[]; rows=0; cols=0; 
 	min_val=0.0;
 	ins = open( file , "r" )
@@ -166,7 +169,7 @@ def surface(file, center=False, convexity=1):
 	# Block 2: left and right side walls
 	for i in range(1, rows):  # 1.. rows-1  # left wall
 		faces.append( [pc+3,pc+2,pc+1,pc] ); pc+=4; # clockwise orientation!
-		points.append( [ox + 0, oy + i-1, min_val]);
+		points.append( [ox + 0, oy + i-1, min_val]);        
 		points.append( [ox + 0, oy + i-1, data[i-1][0] ]);
 		points.append( [ox + 0, oy + i,  data[i][0] ]);
 		points.append( [ox + 0, oy + i, min_val] );
@@ -175,9 +178,9 @@ def surface(file, center=False, convexity=1):
 		points.append( [ox + cols-1, oy + i-1, min_val] );
 		points.append( [ox + cols-1, oy + i-1, data[i-1][cols-1] ] );
 		points.append( [ox + cols-1, oy + i, data[i][cols-1] ] );
-		points.append( [ox + cols-1, oy + i, min_val ] );
+		points.append( [ox + cols-1, oy + i, min_val ] ); 
 	# Block 3: front and back side walls
-	for i in range(1, rows):  # 1.. rows-1   # front wall
+	for i in range(1, cols):  # 1.. cols-1   # front wall
 		faces.append( [pc,pc+1,pc+2,pc+3] ); pc+=4; # p->append_poly();
 		points.append( [ox + i-1, oy + 0, min_val] );
 		points.append( [ox + i-1, oy + 0, data[0][i-1] ] );
@@ -189,27 +192,22 @@ def surface(file, center=False, convexity=1):
 		points.append( [ox + i-1, oy + rows-1, data[rows-1][i-1] ] );
 		points.append( [ox + i, oy + rows-1, data[rows-1][i] ] );
 		points.append( [ox + i, oy + rows-1, min_val ] );
-	# Block 4: bottom side of  the object	(z-Axis is on "min_val")		
-#	ptsOld=len(points) # num points so far
-#	for i in range(1, cols):  # 1.. cols-1
-#		points.append( [ox + i, oy + 0, min_val ] );
-#	for i in range(1, rows):  # 1.. rows-1
-#		points.append( [ox + cols-1, oy + i, min_val ] );
-#	for i in range(cols-1,0,-1):
-#		points.append( [ox + i, oy + rows-1, min_val ] );
-#	for i in range(rows-1,0,-1):
-#		points.append( [ox + 0, oy + i, min_val ] );
-#	pts = len(points)-ptsOld #number of points inserted in last block
-#	# should be 2x (rows-1) + 2* (cols-1)
-#	echo("pts:",pts)
-#	#faces.append( range(pc,pc+pts) )
-#	faces.append( range(pc+pts-1,pc-1,-1) )
-	# BLock 4: I think it can be simple 4 points polygon
-	faces.append( range(pc, pc+4) )
-	points.append( [ox + 0, oy + 0, min_val ] );
-	points.append( [ox + cols-1, oy + 0, min_val ] );
-	points.append( [ox + cols-1, oy + rows-1, min_val ] );
-	points.append( [ox + 0, oy + rows-1, min_val ] );
+	# Block 4: bottom side of  the object	(z-Axis is on "min_val")	
+	# need to connect all floor edge points to make the shape "watertight", not just four corners.
+	ptsOld=len(points) # num points so far
+	for i in range(0, cols-1):  # i=0.. <cols-1
+		points.append( [ox + i, oy + 0, min_val ] );
+	for i in range(0, rows-1):  # i=0.. <rows-1
+		points.append( [ox + cols-1, oy + i, min_val ] );
+	for i in range(cols-1,0,-1):
+		points.append( [ox + i, oy + rows-1, min_val ] );
+	for i in range(rows-1,0,-1):
+		points.append( [ox + 0, oy + i, min_val ] );
+	pts = len(points)-ptsOld #number of points inserted in last block
+	# should be 2x (rows-1) + 2* (cols-1)
+	print("pts:",pts)
+	faces.append( range(pc,pc+pts) )
+	#faces.append( range(pc+pts-1,pc-1,-1) ) # test reverse order -> wrong orientation of bottom
 	#
 	# result reuses the polyhedron implementation...
 	# 
