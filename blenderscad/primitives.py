@@ -24,6 +24,7 @@ def cube(size=(1.0,1.0,1.0), center=False):
 	bpy.ops.mesh.primitive_cube_add(location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Cube']  # not safe enough if an earlier object named 'Cube' exists...
 	o = bpy.context.active_object
+	o.select = True
 	o.dimensions=size
 	bpy.ops.object.transform_apply(scale=True)  
 	o.name='cu' # +str(index)

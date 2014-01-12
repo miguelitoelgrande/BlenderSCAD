@@ -73,12 +73,6 @@ def get_fragments_from_r(r, fn=None, fs=None, fa=None):
 	if r < GRID_FINE: return 3;
 	if fn > 0.0: return int(fn if fn >= 3 else 3);
 	return int(math.ceil(max(min(360.00 / fa,  r*2*math.pi / fs ) , 5)  )  );
-
-########	
-#	if (r < GRID_FINE) return 3;
-#	if (fn > 0.0) return (int)(fn >= 3 ? fn : 3);
-#	return (int)ceil(fmax(fmin(360.0 / fa, r*2*M_PI / fs), 5));
-########
 	
 	
 # clearAllObjects(): empty whole scene, useful during development
@@ -386,8 +380,10 @@ def dissolve(o=None):
 	if bpy.context.active_object.mode is not 'EDIT':	
 		bpy.ops.object.mode_set(mode = 'EDIT' )
 	bpy.ops.mesh.select_all(action="SELECT")
-	# Dissolve selected edges and verts, limited by the angle of surrounding geometry
-	bpy.ops.mesh.dissolve_limited(angle_limit=0.00000001, use_dissolve_boundaries=True)
+	# Dissolve selected edges and verts, limited by the angle of surrounding geometry		
+	#bpy.ops.mesh.dissolve_limited(angle_limit=0.00000001, use_dissolve_boundaries=True)
+	bpy.ops.mesh.dissolve_limited(angle_limit=0.1, use_dissolve_boundaries=True)
+	#bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.001), use_dissolve_boundaries=True)
 	bpy.ops.object.mode_set(mode = 'OBJECT' )			
 	return o
 
@@ -437,8 +433,8 @@ def remove_duplicates():
 			bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # set to Object Mode AGAIN
 	return obj
 	
-def cleanup_object(o=None,removeDoubles=False,subdivide=False, normalsRecalcOut=False):
-	#echo("cleanup", [removeDoubles, subdivide, normalsRecalcOut])		
+def cleanup_object(o=None,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False):
+	#echo("cleanup", [removeDoubles, quads, subdivide, normalsRecalcOut])		
 	if o is None:	
 		o = bpy.context.scene.objects.active
 	else:
@@ -447,14 +443,17 @@ def cleanup_object(o=None,removeDoubles=False,subdivide=False, normalsRecalcOut=
 		bpy.ops.object.mode_set(mode = 'EDIT')
 	bpy.ops.mesh.select_all(action="SELECT")
 	if removeDoubles:
-		bpy.ops.mesh.remove_doubles(threshold=0.01)
+		bpy.ops.mesh.remove_doubles(threshold=0.00001)
+	bpy.ops.mesh.select_all(action="SELECT")
+	if quads:
+		bpy.ops.mesh.tris_convert_to_quads(limit=0.000001)
 	bpy.ops.mesh.select_all(action="SELECT")		
 	if normalsRecalcOut:	
 		bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
 	#bpy.ops.mesh.fill_holes()
 	bpy.ops.mesh.select_all(action="SELECT")
-#	if subdivide:  # could fix probs with boolean Difference modifier..
-#		bpy.ops.mesh.subdivide(number_cuts=p) # 4 pieces in each direction
+	if subdivide:  # could fix probs with boolean Difference modifier..
+		bpy.ops.mesh.subdivide(number_cuts=2) # 4 pieces in each direction
 	# TODO: subdivide:
 	#    number_cuts (int in [1, inf], (optional)) – Number of Cuts
 	#    smoothness (float in [0, inf], (optional)) – Smoothness, Smoothness factor.
@@ -466,11 +465,8 @@ def cleanup_object(o=None,removeDoubles=False,subdivide=False, normalsRecalcOut=
 	#bpy.ops.mesh.select_by_number_vertices(number=4, type='GREATER')
 	#bpy.ops.mesh.select_by_number_vertices(type='OTHER')
 	# convert nGons to triangles
-#	bpy.ops.mesh.quads_convert_to_tris(use_beauty=True)
-	# convert triangles to quads, not pretty but is better than holes in the mesh.
-#	bpy.ops.mesh.tris_convert_to_quads(limit=0.698132, uvs=False, vcols=False, sharp=False, materials=False)
-	# return to object mode
 	#
+	# return to object mode
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
 	#bpy.context.active_object.data.update(calc_edges=True, calc_tessface=True)	
@@ -541,8 +537,8 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 
 	
 def union(o1,*objs, apply=True):
-	res = o1
-	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	res = o1	
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	tmp=res.name
 	for obj in objs:
 		if obj != None:
@@ -551,7 +547,7 @@ def union(o1,*objs, apply=True):
 			res = booleanOp(res,obj, boolOp='UNION', apply=apply)	
 	res.name = 'u('+tmp+')'
 	res.data.name = 'u('+tmp+')'
-	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	return res
 		
 # TODO: write some "debug" mode grouping instead of really diffing sub-tree
@@ -560,13 +556,35 @@ def union(o1,*objs, apply=True):
 
 def difference(o1,*objs, apply=True):
 	res = o1
-	cleanup_object(o1, subdivide=True)	
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)	
 	tmp=res.name	
 	to = None
 	for obj in objs:
 		if obj != None:
 			tmp=tmp+","+obj.name
-			cleanup_object(obj, removeDoubles=True, subdivide=False)	
+#			cleanup_object(obj, removeDoubles=True, subdivide=False)	
+			#res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
+			if to is None:
+				to = obj
+			else:
+				#to = join(to,obj)
+				to = booleanOp(obj,to, boolOp='UNION', apply=apply)	
+	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)			
+	res.name = 'd('+tmp+')'
+	res.data.name = 'd('+tmp+')'
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	return res
+
+# experimental alternative: instead of pairwise boolean, first join all objs to be diffed...
+def difference2(o1,*objs, apply=True):
+	res = o1
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)	
+	tmp=res.name	
+	to = None
+	for obj in objs:
+		if obj != None:
+			tmp=tmp+","+obj.name
+#			cleanup_object(obj, removeDoubles=True, subdivide=False)	
 			#res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
 			if to is None:
 				to = obj
@@ -574,16 +592,15 @@ def difference(o1,*objs, apply=True):
 				to = join(to,obj)
 				#to = booleanOp(obj,to, boolOp='UNION', apply=apply)	
 	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)			
-	res.name = 'd('+tmp+')'
-	res.data.name = 'd('+tmp+')'
-	cleanup_object(res, removeDoubles=True, subdivide=False)
-	return res
-
+	res.name = 'd2('+tmp+')'
+	res.data.name = 'd2('+tmp+')'
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	return res	
 	
 def intersection(o1,*objs, apply=True):
 ## Remark: cannot use union here!! need to intersect all...
 	res = o1
-	#cleanup_object(res, removeDoubles=True, subdivide=False)
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	tmp=res.name
 	for obj in objs:
 		if obj != None:
@@ -592,7 +609,7 @@ def intersection(o1,*objs, apply=True):
 			res = booleanOp(res,obj, boolOp='INTERSECT', apply=apply)
 	res.name = 'i('+tmp+')'
 	res.data.name = 'i('+tmp+')'
-	#cleanup_object(res, removeDoubles=True, subdivide=False)	
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	return res
 	
 
