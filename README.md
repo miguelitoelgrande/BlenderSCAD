@@ -119,7 +119,7 @@ A last word of "warning": Pay attention to where your source file is saved.
 <i>ALT+S</i> will save the file in the editor, <i>CTRL+S</i> will save the "materialized" version of that file inside blender. Changes may be lost if you resync.
 
 
-<h3>Supported so far</h3>
+<h3>Supported:</h3>
 <ul>
 <li>cube
 <li>cylinder
@@ -140,14 +140,14 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>difference
 <li>intersection
 <li>
-<li>
+<li>projection
 <li>*linear_extrude
 <li>rotate_extrude
 <li>hull
 <li>
 <li>surface
-<li>import_, import_stl , import_dxf
-<li>export, export_dxf, export_stl
+<li>import_, import_stl , *import_dxf
+<li>export, export_stl, *export_dxf
 <li>
 <li>hexagon
 <li>octagon
@@ -160,21 +160,19 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>math functions: lookup, rands, sign, sin , cos,...
 </ul>
 
-
 <h3>Extras</h3>
 <ul>
 <li>join
 <li>group
 <li>round_edges
 <li>
-<li>+several demos
+<li>+several (OpenSCAD) demos
 <li>...
 </ul>
 
 <h3>Missing</h3>
 <ul>
 <li>minkowski
-<li>projection
 <li>norm
 <li>multimatrix
 <li>...

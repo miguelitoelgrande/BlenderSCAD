@@ -214,7 +214,7 @@ def surface(file, center=False, convexity=1):
 	#polyhedron(points = [ [0, -10, 60], [0, 10, 60], [0, 10, 0] ], faces = [ [0,3,2] ]  )
 	o = blenderscad.primitives.polyhedron(points , faces)
 	#cleanup_object(o,removeDoubles=False)	
-	#remove_duplicates()
+	#blenderscad.core.remove_duplicates()
 	return o
 
 ## ------------------------------------------

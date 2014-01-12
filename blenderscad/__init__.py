@@ -47,12 +47,18 @@ if bpy.context.active_object is not None:
 
 # "reload()" is not reliable, especially with "from ... import *"
 # better using exec(compile(...)) instead while developing the modules..
-# import imp
-# imp.reload(blenderscad.core)
-# imp.reload(blenderscad.primitives)
-
-# from blenderscad.core import *
-# from blenderscad.primitives import *
+# ####################################################################
+# # This block helps during developmentas it reloads the blenderscad modules which are already present
+# # and may have changed...
+# # can be commented out or removed if you do not modify blenderscad libs during this blender session.
+# import imp; import sys
+# rel = ['blenderscad','blenderscad.math',
+# 'blenderscad.core', 'blenderscad.primitives','blenderscad.impexp', 'blenderscad.shapes']
+# for mo in rel:
+	# if mo in sys.modules.keys():
+		# print ('reloading: '+mo+' -> '+ sys.modules[mo].__file__)
+		# imp.reload(sys.modules[mo])
+# ####################################################################
 
 
 # init blenderscad in current namespace, so no need to type blenderscad.cube()
@@ -84,7 +90,7 @@ def initns(nsdict):
 	public_core = [  'listAllObjects', 'clearAllObjects', 'color', 'echo', 'str'
 	                 ,  'difference', 'union', 'intersection', 'join', 'group'
 					 , 'resize', 'rotate', 'mirror', 'translate', 'round_edges', 'scale'
-	                 , 'hull', 'linear_extrude', 'rotate_extrude', 'remesh'	, 'remove_duplicates'
+	                 , 'hull', 'linear_extrude', 'rotate_extrude', 'remesh'	, 'remove_duplicates', 'projection'
 					# 'booleanOp', 'cleanup_object'
 				]
 	for name in public_core:		    

@@ -229,12 +229,8 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene
-	verts=points
-	#verts=[] 
-	#for p in points:
-	#	verts.append([p[0],p[1],p[2]])
-	# print({'verts':verts} ,  {'faces': faces} )
-	me.from_pydata(verts, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
+	# print({'points': points} ,  {'faces': faces} )
+	me.from_pydata(points, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
 	# Update mesh with new data
 	me.update(calc_edges=True)		
 	bpy.context.scene.objects.active = o
@@ -249,7 +245,7 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 			bpy.ops.mesh.fill_grid()
 		except RuntimeError:
 			bpy.ops.mesh.fill() 	
-	bpy.ops.mesh.flip_normals()
+	bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
 	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	return o

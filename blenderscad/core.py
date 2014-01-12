@@ -134,6 +134,8 @@ def color( rgba=(1.0,1.0,1.0, 0), o=None):
 
 # OpenSCAD: translate(v = [x, y, z]) { ... }
 def translate( v=(0.0,0.0,0.0), o=None):
+	if len(v)==2: # 2D case where only 2 components provided
+		v.append(0.0)
 	if o is None:
 		o = bpy.context.object
 	bpy.ops.object.select_all(action = 'DESELECT')
@@ -209,7 +211,7 @@ def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
 	o.location[0] = (cos(az)*x -sin(az)*y) 
 	o.location[1] = (sin(az)*x +cos(az)*y)            
 	x = o.location[0]
-	y = o.location[1]	
+	y = o.location[1]
 	for i in range(0,2):	o.location[i]=round(o.location[i] , 2); 	
 	bpy.ops.object.transform_apply(location=True)
 	# combined rotations...
@@ -257,6 +259,8 @@ def mirror(a=[1,0,0], o=None):
 
 # OpenSCAD: scale(v = [x, y, z]) { ... }
 def scale(v=[1.0,1.0,1.0], o=None):
+	if len(v)==2: # 2D case where only 2 components provided
+		v.append(0.0)
 	if o is None:
 		o = bpy.context.object
 	bpy.ops.object.select_all(action = 'DESELECT')
@@ -330,7 +334,52 @@ def remesh( o=None, apply=True):
 	o.data.name = 'rm('+o.data.name+')'	
 	return o
 
+# wrapper for decimate Modifier
+def decimate( o=None, apply=True ):
+	import bpy
+	if o is None:   
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o	
+	de = o.modifiers.new('MyDecimate', 'DECIMATE')
+	#de.angle_limit = 0
+	de.iterations = 4
+	# often forgotten: needs to be active!!
+	bpy.context.scene.objects.active = o
+	if apply==True:
+		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyDecimate')	
+	return o	
+	
+# wrapper for limited dissolve (attempt to cleanup model after bool op.)
+def dissolve(o=None):
+	import bpy
+	if o is None:   
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'EDIT':	
+		bpy.ops.object.mode_set(mode = 'EDIT' )
+	bpy.ops.mesh.select_all(action="SELECT")
+	# Dissolve selected edges and verts, limited by the angle of surrounding geometry
+	bpy.ops.mesh.dissolve_limited(angle_limit=0.00000001, use_dissolve_boundaries=True)
+	bpy.ops.object.mode_set(mode = 'OBJECT' )			
+	return o
 
+# eliminate a given polygon/face of an object
+# found: http://yorik.uncreated.net/guestblog.php?2013=314
+def deletePolygon(obj, faceIdx):
+	#obj = bpy.context.active_object
+	if bpy.context.active_object.mode is not 'EDIT':	
+		bpy.ops.object.mode_set(mode = 'EDIT' )
+	bpy.ops.mesh.select_all(action="DESELECT")
+	bpy.ops.object.mode_set(mode = 'OBJECT' )
+	obj.data.polygons[faceIdx].select = True
+	bpy.ops.object.mode_set(mode = 'EDIT' )
+	bpy.ops.mesh.delete(type="FACE")
+	bpy.ops.object.mode_set(mode = 'OBJECT' )
+	return {'FINISHED'}
+
+	
 #-----------------------------------------------------------------------------
 # from: http://blenderartists.org/forum/archive/index.php/t-278694.html
 #remove duplicates v1.3
@@ -363,20 +412,23 @@ def remove_duplicates():
 	return obj
 	
 def cleanup_object(o=None,removeDoubles=False,subdivide=False, normalsRecalcOut=False):
-	#echo("cleanup", [removeDoubles, subdivide, normalsRecalcOut])	
+	#echo("cleanup", [removeDoubles, subdivide, normalsRecalcOut])		
 	if o is None:	
 		o = bpy.context.scene.objects.active
 	else:
 		bpy.context.scene.objects.active = o
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')
-	if normalsRecalcOut:
+	bpy.ops.mesh.select_all(action="SELECT")
+	if removeDoubles:
+		bpy.ops.mesh.remove_doubles(threshold=0.01)
+	bpy.ops.mesh.select_all(action="SELECT")		
+	if normalsRecalcOut:	
 		bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
 	#bpy.ops.mesh.fill_holes()
-	if removeDoubles:
-		bpy.ops.mesh.remove_doubles()
-	if subdivide:  # could fix probs with boolean Difference modifier..
-		bpy.ops.mesh.subdivide(number_cuts=9) # 4 pieces in each direction
+	bpy.ops.mesh.select_all(action="SELECT")
+#	if subdivide:  # could fix probs with boolean Difference modifier..
+#		bpy.ops.mesh.subdivide(number_cuts=p) # 4 pieces in each direction
 	# TODO: subdivide:
 	#    number_cuts (int in [1, inf], (optional)) – Number of Cuts
 	#    smoothness (float in [0, inf], (optional)) – Smoothness, Smoothness factor.
@@ -518,8 +570,6 @@ def intersection(o1,*objs, apply=True):
 	return res
 	
 
-
-
 #   bpy.ops.mesh.convex_hull(delete_unused_vertices=True, use_existing_faces=True)
 #   Enclose selected vertices in a convex polyhedron   
 def hull(o1,*objs):
@@ -534,6 +584,13 @@ def hull(o1,*objs):
 		#print (v)
 	#bpy.ops.mesh.select_all(action='SELECT')
 	bpy.ops.mesh.convex_hull(use_existing_faces=False)
+	#bpy.ops.mesh.convex_hull(join_triangles=True, make_holes=True, limit=3.14159,delete_unused=True, use_existing_faces=False)
+	# TODO: optimize params to keep shapes clean?
+    #delete_unused (boolean, (optional)) – Delete Unused, Delete selected elements that are not used by the hull
+    #use_existing_faces (boolean, (optional)) – Use Existing Faces, Skip hull triangles that are covered by a pre-existing face
+    #make_holes (boolean, (optional)) – Make Holes, Delete selected faces that are used by the hull
+    #join_triangles (boolean, (optional)) – Join Triangles, Merge adjacent triangles into quads
+    #limit (float in [0, 3.14159], (optional)) – Max Angle, Angle Limit
 	bpy.ops.mesh.remove_doubles()
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -544,6 +601,54 @@ def hull(o1,*objs):
 
 
 
+#OpenSCAD: "projection() creates 2d drawings from 3d models, to be exported to the dxf format. 
+#		   It works by projecting a 3D model to the (x,y) plane, with z at 0. 
+#		   If cut=true, only points with z=0 will be considered (effectively cutting the object), 
+#		   with cut=false, points above and below the plane will be considered as well (creating a proper projection)."
+# Well, not really projection, buy a cut through the object OpenSCAD projection(cut=true)
+def projection(o=None,cut=False):
+	if o is None:   
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o
+	if cut:							 
+		if bpy.context.active_object.mode is not 'EDIT':
+			bpy.ops.object.mode_set(mode = 'EDIT')	  
+		bpy.ops.mesh.bisect(plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), use_fill=cut, clear_inner=True, clear_outer=True, threshold=0.00000)
+		bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
+		if bpy.context.active_object.mode is not 'OBJECT': 
+			bpy.ops.object.mode_set(mode = 'OBJECT')		
+	else: #if cut is False:
+		# "Flatten" whole object to zero in Z-Axis -> almost projection
+		blenderscad.core.dissolve(o)				
+		o.dimensions[2]=0.0 ; o.location[2]=0.0
+		bpy.ops.object.transform_apply(scale=True, location=True) # Apply the object’s transformation to its data
+		###### deselcting all meshes first...
+		if bpy.context.active_object.mode is not 'EDIT':	
+			bpy.ops.object.mode_set(mode = 'EDIT' )
+		bpy.ops.mesh.select_all(action="DESELECT")
+		bpy.context.tool_settings.mesh_select_mode = [False, False, True] # set to face select in 3D View Editor
+		bpy.ops.object.mode_set(mode = 'OBJECT' )		
+		for i in range(len(o.data.polygons)-1,-1,-1):  #for p in o.data.polygons:	
+			p = o.data.polygons[i];
+			if p.normal[2] <= 0.0: # dirty hack: all faces pointing "down" will be removed
+				# p.select will only select the right things if select_mode above set (in EDIT mode)
+				p.select = True # needs to happen in OBJECT mode.. faces to be deleted
+		bpy.ops.object.mode_set(mode = 'EDIT' )
+		bpy.ops.mesh.delete(type="FACE") #  {‘VERT’, ‘EDGE’, ‘FACE’, ‘EDGE_FACE’, ‘ONLY_FACE’]
+#		bpy.ops.mesh.remove_doubles(threshold=0.01)
+		bpy.ops.object.mode_set(mode = 'OBJECT' )
+		##########
+	#o.data.update(calc_edges=True, calc_tessface=True)
+#	if cut is False:
+#		#blenderscad.core.cleanup_object(o=o,removeDoubles=True,subdivide=False, normalsRecalcOut=True)
+#		#blenderscad.core.remove_duplicates()		
+	print("num vertices: "+str(len(o.data.vertices)))
+	print("num polygons: "+str(len(o.data.polygons)))
+	return o	
+
+#o=projection( cut=true, o=translate([0,0,-5], rotate([45,0,45], cube(20))));
+#o=projection( cut=false, o=translate([0,0,-5], rotate([45,0,45], cube(20))));
 
 # OpenSCAD: linear_extrude(height = <val>, center = <boolean>, convexity = <val>, twist = <degrees>[, slices = <val>, $fn=...,$fs=...,$fa=...]){...}
 # see WIKI: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/2D_to_3D_Extrusion
@@ -557,14 +662,16 @@ def linear_extrude(height, o=None , center=True, convexity=-1, twist=0):
 	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
 	#bpy.context.scene.cursor_location = (5,5,0)
 	if bpy.context.active_object.mode is not 'EDIT':
-		bpy.ops.object.mode_set(mode = 'EDIT')	
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.select_all(action="SELECT")
 	bpy.ops.mesh.extrude_region_move(TRANSFORM_OT_translate={"value":(0.0,0.0,height)})
-	# bpy.ops.mesh.extrude_region_move(MESH_OT_extrude=None, TRANSFORM_OT_translate=None)
+	#bpy.ops.mesh.extrude_region_move(MESH_OT_extrude=None, TRANSFORM_OT_translate=None)
+	#TODO: causes a "convertViewVec: called in an invalid context"	
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	if twist != 0:	
 		mod1 = o.modifiers.new('Mod1', 'SIMPLE_DEFORM')
-		mod1.angle = twist	* (pi/180)
+		mod1.angle = twist	* (math.pi/180)
 		#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')				
 	#o.data.materials.append(mat)
 	#o.color = blenderscad.defColor
@@ -598,7 +705,8 @@ def rotate_extrude(o=None, fn=-1):
 	o.location[1]=0.0	
 	rotate([90,0,0],o ) # emulating OpenSCAD: assumes 2D object in X-Y-Plane...
 	if bpy.context.active_object.mode is not 'EDIT':
-		bpy.ops.object.mode_set(mode = 'EDIT')	
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.select_all(action="SELECT")		
 	prevAreaType = bpy.context.area.type # TEXT_EDITOR or CONSOLE
 	bpy.context.area.type = 'VIEW_3D' # probably: need to set cursor for Spin to be right...	
 	#print(o.location)
@@ -608,7 +716,7 @@ def rotate_extrude(o=None, fn=-1):
 	bpy.ops.view3d.snap_cursor_to_selected()
 	#print (bpy.ops.mesh.spin.poll())	
     # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
-	angle = pi*2.0 #(360 * pi / 180) # ggrrr.. need to convert or debug for hours :-)
+	angle = math.pi*2.0 #(360 * pi / 180) # ggrrr.. need to convert or debug for hours :-)
 	bpy.ops.mesh.spin(steps=segments, dupli=False, angle=angle, center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0))
 	# if duplicate: delete original meshes... still selected.
 	#bpy.ops.mesh.delete(type='VERT')	
@@ -625,6 +733,9 @@ def rotate_extrude(o=None, fn=-1):
 	#	o.data.materials.append(mat)
 	#	o.color = blenderscad.defColor
 	# TODO: need to cleanup the result
+	bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.select_all(action="SELECT")
+	bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
 	#mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
 	#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')
 	return o

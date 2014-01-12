@@ -1,38 +1,41 @@
-# blenderscad.shapes
-# Color name definitions as defined in OpenSCAD (and SVG)
+# BlenderSCAD Demos
+# Just a bunch of demos and test cases.
 # by Michael Mlivoncic, 2013
 #
 
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-
 import sys
 sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
 from mathutils import Vector
 
+
+# This block helps during developmentas it reloads the blenderscad modules which are already present
+# and may have changed...
+# can be commented out or removed if you do not modify blenderscad libs during this blender session.
+import imp; import sys
+rel = ['blenderscad','blenderscad.math',
+'blenderscad.core', 'blenderscad.primitives','blenderscad.impexp', 'blenderscad.shapes']
+for mo in rel:
+	if mo in sys.modules.keys():
+		print ('reloading: '+mo+' -> '+ sys.modules[mo].__file__)
+		imp.reload(sys.modules[mo])
+########################
+
 import blenderscad
 #from blenderscad.shapes import *   # optional 
 
-
-# This block is just for debugging: to reload all blenderscad module 
-#  which might have changed externally...
-# can be commented out or removed if you do not modify blenderscad libs during this blender session.
-# This was a bit easier when this all was in a single file ;-)
-import imp
-imp.reload(blenderscad)
-#imp.reload(blenderscad.math)
-imp.reload(blenderscad.core)
-imp.reload(blenderscad.primitives)
-imp.reload(blenderscad.impexp)
-#imp.reload(blenderscad.shapes)
-##################
-
 blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
 
-
+###############################
+import time
+import datetime
+st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
+echo ("BEGIN", st)
+##############################
 
 
 ## List loaded blenderscad related (sub)modules
@@ -134,14 +137,15 @@ def HullDemo2():
 	#cylinder(r1=10,r2=20,h=20) 
 	translate( (20,20,-10) , cylinder(r1=4,r2=8,h=20,center=true)   )
 ))))
-#HullDemo2()
+
+#o=HullDemo2()
 
 
 def Demo1():
 	scale([5,5,5], translate([0,0,5],
 		union(
 			rotate( [90,0,90], cylinder(h=10,r=3,center=true) )   
-		,   rotate( [90,0,0], cylinder(h=10,r=3, center=true) )  
+		,   rotate( [90,0,0], cylinder(h=10,r=3, center=true) )  	
 		,   rotate( [0,0,90], cylinder(h=10,r=3, center=true) )   
 	  )
 	)) 
@@ -150,8 +154,8 @@ def Demo1():
 
 
 # OpenJSCAD.org Logo :-)	  
-def Demo2():  
-	scale([10,10,10], 
+def Demo2():
+	return scale([10,10,10], 
 	   translate([0,0,1.5] 
 		 , group(   
 			 color(purple, difference(
@@ -166,7 +170,7 @@ def Demo2():
 	 )
 	)
 
-Demo2()
+o=Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -249,6 +253,7 @@ def MulticolorSin3D():
 #MulticolorSin3D()
 
 
+
 # ported from sample at: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#lookup 
 def lookup_demo():
 	# helper, inner def
@@ -316,8 +321,10 @@ def intersection_for_demo():
 			rotate(i ,
 			cube([100, 20, 20], center = true))
 			, tmp);
+	return tmp
 
 #intersection_for_demo()
+
 
 #
 def surface_demo():
@@ -337,7 +344,9 @@ def pacman():
 	    ,   translate([-1,4,-5], cylinder (r=1, h=3  ) )
 	 ))))
 
-#pacman()
+#o=pacman()
+
+
 
 # compare result to OpenSCAD:
 def rotate_test():
@@ -380,9 +389,8 @@ D = 52
 # axis diameter
 A = 7  #Actually 6mm
 b=14 # holder height
-#FilamentHolderSimple(D,A,b)
 
-
+#o=FilamentHolderSimple(D,A,b)
 
 
 #TODO: Fix error if "union" instead of "group":
@@ -400,7 +408,8 @@ def ft_nut(L=1.0,A=4.0,SLOT=3.0,H=30.0):
 # STRANGE...			
 #	,	translate([L/2.0 , 0,0],cylinder(r=SLOT/2,h=H+2,center=true))
 #	,	translate([L/2.0 , 0,0], cube([A,SLOT,H*1.2],center=true))  # leads to: CSG failed, exception extern\carve\lib\triangulator.cpp:899  "didn't manage to link up hole!"
-	,	translate([L/2.0 +000000000000000000000000000.1, 0, 0],
+#	,	translate([L/2.0 +000000000000000000000000000.1, 0, 0],
+	,	translate([L/2.0 , 0, 0],  # problem seems to be resolved with revcent tuning of my core code. keeping this here in case further tuning (/w cleanup_objects) will return probs.
 #		  color(blue,
 			cube([A,SLOT,H*1.2],center=true))
 #			)	
@@ -432,7 +441,7 @@ def makeFtBlock():
 		,apply=True)
 	 )	
 
-#color(red, makeFtBlock() )
+#o=color(red, makeFtBlock() )
 
 #L = 15 # Laenge in mm
 #B = 15 # Breite in mm
@@ -440,7 +449,10 @@ def makeFtBlock():
 #A = 4 # axis diameter
 #SLOT = 3 		
 #rotate([0,0,270] , ft_nut(L,A,SLOT,H) )					
-						
+
+
+
+##############################						
 						
 					
 ## TODO: exporter...
@@ -495,10 +507,22 @@ def TODO_exportDXF():
 #color(lime, import_stl("./Demo.stl"))
 
 
+##########################################################################
+
+print("num vertices: "+str(len(o.data.vertices)))
+print("num polygons: "+str(len(o.data.polygons)))
+blenderscad.core.dissolve(o)
+print("num vertices: "+str(len(o.data.vertices)))
+print("num polygons: "+str(len(o.data.polygons)))
+blenderscad.core.decimate(o)
+print("num vertices: "+str(len(o.data.vertices)))
+print("num polygons: "+str(len(o.data.polygons)))
+#blenderscad.core.remesh(o)
+
 
 ##########################################################################
 
-color(rands(0,1,3)) # random color last object. to see "FINISH" :-)
+color(rands(0.0,1,3)) # random color last object. to see "FINISH" :-)
 
 # print timestamp and finish - sometimes it is easier to see differences in console then :-)
 import time
