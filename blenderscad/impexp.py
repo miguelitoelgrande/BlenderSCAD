@@ -36,6 +36,7 @@ def fill_object(o):
 	bpy.ops.mesh.flip_normals()
 	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
+	return o
 
 # OpenSCAD: import_dxf() ...
 def import_dxf(file, layer="", convexity=10, fill=True):
@@ -135,7 +136,7 @@ def surface(file, center=False, convexity=1):
 	print("importing surface ",file,": rows=",rows," cols=",cols)
 	ox = -(cols-1)/2.0 if center else 0;
 	oy = -(rows-1)/2.0 if center else 0;
-
+	#
 	points=[]; faces=[]; pc=0; # pointCounter
 	# Block 1: Surface (top) of object
 	for i in range(1, rows):  # 1.. rows-1
