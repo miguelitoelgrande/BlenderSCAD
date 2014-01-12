@@ -49,12 +49,38 @@ import blenderscad # for "global" variables fn, defColor,...
 #from blenderscad.math import *  # true, false required...
 
 # need to setup/reference our default material
-mat = bpy.data.materials.get('useObjectColor')
-if mat is None:
-	mat=bpy.data.materials.new('useObjectColor')
-	mat.use_object_color=1
+mat=blenderscad.mat
+#mat = bpy.data.materials.get('useObjectColor')
+#if mat is None:
+#	mat=bpy.data.materials.new('useObjectColor')
+#	mat.use_object_color=1
 
+#Emulate OpenSCAD Special variables  blenderscad.{fs,fa,fn}
+#fa - minimum angle  $fn = 360 / $fa    / default: $fa = 12 -> segments = 30
+#fs - minimum size   default: 1 
+#fn - number of fragments  | override of $fa/$fs , default = 0 , example: 36-> every 10 degrees
 
+#	get_fragments_from_r() - ported from OpenSCAD to emulate special variables $fs,$fa,$fn
+#	Returns the number of subdivision of a whole circle, given radius and
+#	the three special variables $fn, $fs and $fa
+def get_fragments_from_r(r, fn=None, fs=None, fa=None):
+	GRID_COARSE = 0.001;
+	GRID_FINE   = 0.000001;
+	if fn is None: fn=blenderscad.fn
+	if fs is None: fs=blenderscad.fs
+	if fa is None: fa=blenderscad.fa
+    # if r== ... well need to provide some radius
+	if r < GRID_FINE: return 3;
+	if fn > 0.0: return int(fn if fn >= 3 else 3);
+	return int(math.ceil(max(min(360.00 / fa,  r*2*math.pi / fs ) , 5)  )  );
+
+########	
+#	if (r < GRID_FINE) return 3;
+#	if (fn > 0.0) return (int)(fn >= 3 ? fn : 3);
+#	return (int)ceil(fmax(fmin(360.0 / fa, r*2*M_PI / fs), 5));
+########
+	
+	
 # clearAllObjects(): empty whole scene, useful during development
 # It tries to really remove the objects, not only unlink, so the .blend files won't grow with the garbage.
 def clearAllObjects():	
@@ -688,13 +714,16 @@ def linear_extrude(height, o=None , center=True, convexity=-1, twist=0):
 #linear_extrude(height = 10, o=polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]]))
 #linear_extrude(height = 30, twist=-40, o=polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]]))
 
+#, fn=None, fs=None, fa=None):
+#segments=blenderscad.core.get_fragments_from_r( r=r, fn=fn, fs=fs, fa=fa )
+
 # OpenSCAD: rotate_extrude(convexity = <val>[, $fn = ...]){...}
 # This emulation would also swallow 3D objects ;-)
 # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
 # Wiki on Blender Spin: http://de.wikibooks.org/wiki/Blender_Dokumentation:_Spin_und_SpinDup
 # example007.scad shows params file= and layer= -> not implemented, using import_dxf() instead
-def rotate_extrude(o=None, fn=-1):	
-	segments = fn if fn != -1 else blenderscad.fn # globals()["fn"]
+def rotate_extrude(o=None, fn=None, fs=None, fa=None):	
+	#segments = fn if fn != -1 else blenderscad.fn # globals()["fn"]
 	#print(segments)
 	if o is None:
 		o = bpy.context.object
@@ -716,6 +745,10 @@ def rotate_extrude(o=None, fn=-1):
 	bpy.ops.view3d.snap_cursor_to_selected()
 	#print (bpy.ops.mesh.spin.poll())	
     # params to emulate rotate_extrude of OpenSCAD, 2D object in XY plane
+	bb=o.bound_box[4][0] # boundbox 8x<x,y,z>->( LoX,LoY,LoZ, LoX,LoY,HiZ, LoX,HiY,HiZ, LoX,HiY,LoZ, HiX,LoY,LoZ, HiX,LoY,HiZ, HiX,HiY,HiZ, HiX,HiY,LoZ ). 
+	r = o.location[0] + bb  # outer radius of object.. X-location defines inner "hole", plus bound box outer in X direction..
+	#print("boundBox"); print(bb); print("radius"); print(r);
+	segments=blenderscad.core.get_fragments_from_r( r=r, fn=fn, fs=fs, fa=fa )
 	angle = math.pi*2.0 #(360 * pi / 180) # ggrrr.. need to convert or debug for hours :-)
 	bpy.ops.mesh.spin(steps=segments, dupli=False, angle=angle, center=(0.0, 0.0, 0.0), axis=(0.0, 0.0, 1.0))
 	# if duplicate: delete original meshes... still selected.
@@ -733,11 +766,13 @@ def rotate_extrude(o=None, fn=-1):
 	#	o.data.materials.append(mat)
 	#	o.color = blenderscad.defColor
 	# TODO: need to cleanup the result
-	bpy.ops.object.mode_set(mode = 'EDIT')
-	bpy.ops.mesh.select_all(action="SELECT")
+	#bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
+	bpy.ops.object.mode_set(mode = 'EDIT')	
+	bpy.ops.mesh.select_all(action="SELECT")	
 	bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
 	#mod1 = o.modifiers.new('Mod1', 'SOLIDIFY')	
 	#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')
+	bpy.ops.object.mode_set(mode = 'OBJECT')	
 	return o
 
 #rotate_extrude (polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ))

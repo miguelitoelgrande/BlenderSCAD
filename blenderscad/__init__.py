@@ -26,14 +26,13 @@ if mat is None:
 # default color for object creators below...
 defColor = (1.0,1.0,0.1,0)
 
-# emulate OpenSCAD $fn
-fn=36  # default precision: every 10 degrees a segment..
-
-#TODO: OpenSCAD Special variables
+#Emulate OpenSCAD Special variables  blenderscad.{fs,fa,fn}
 #$fa - minimum angle  $fn = 360 / $fa    / default: $fa = 12 -> segments = 30
+fa=12;
 #$fs - minimum size   default: 1 
-#$fn - number of fragments  | override of $fa/$fs , default = 0 
-
+fs=1;
+#$fn - number of fragments  | override of $fa/$fs , default = 0 , example: 36-> every 10 degrees
+fn=0;
 
 if bpy.context.active_object is not None:
 	if bpy.context.active_object.mode is not 'OBJECT': 

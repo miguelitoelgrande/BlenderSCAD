@@ -6,8 +6,8 @@
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-import sys
-sys.path.append("O:/BlenderStuff") 
+#import sys
+#sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
 from mathutils import Vector
