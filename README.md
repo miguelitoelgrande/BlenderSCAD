@@ -155,7 +155,7 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>rcube
 <li>roundedBox
 <li>
-<li>fn ($fn)
+<li>special variables: fs, fa, fn (~ $fs, $fa, $fn)
 <li>string functions: echo, str, *search
 <li>math functions: lookup, rands, sign, sin , cos,...
 </ul>

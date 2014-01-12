@@ -30,7 +30,7 @@ blenderscad.initns( globals() ) # try to add BlenderSCAD names to current namesp
 
 
 ## Clear the open .blend file!!!
-#clearAllObjects()
+clearAllObjects()
 
 ###### Timestamp ##############################################################################
 import time
@@ -67,8 +67,8 @@ def example002():
 #projection( translate([0,0,25], rotate([90,0,0], example002())));
 #translate([0,0,-6], rotate([90,0,0], example002()))
 #dissolve( translate([0,0,-6], rotate([90,0,0], example002())) );
-#o=projection(cut=true, o=translate([0,0,-6], rotate([90,0,0], example002())));
-o=projection(cut=false, o=translate([0,0,-60], rotate([90,0,0], example002())));
+o=projection(cut=true, o=translate([0,0,-6], rotate([90,0,0], example002())));
+#o=projection(cut=false, o=translate([0,0,-60], rotate([90,0,0], example002())));
 #num vertices: 313
 #num polygons: 207
 
@@ -78,8 +78,9 @@ o=projection(cut=false, o=translate([0,0,-60], rotate([90,0,0], example002())));
 #o=projection( cut=true, o=translate([0,0,-5], rotate([45,0,45], cube(20))));
 #o=projection( cut=false, o=translate([0,0,-5], rotate([45,0,45], cube(20))));
 
-linear_extrude(10,o)
-#rotate_extrude(o)
+#linear_extrude(10,o)
+rotate_extrude(o)
+o=blenderscad.core.dissolve(o)
 
 #cube(20)
 

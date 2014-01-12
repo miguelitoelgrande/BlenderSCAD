@@ -625,7 +625,17 @@ def hull(o1,*objs):
 	cleanup_object(o)
 	return o
 
-
+# wrap Blender's bisect() operator. 
+def cut(o=None, plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), use_fill=True, clear_outer=True, clear_inner=True, threshold=0.00000):
+	if o is None:   
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o						 
+	if bpy.context.active_object.mode is not 'EDIT':
+		bpy.ops.object.mode_set(mode = 'EDIT')	  
+	bpy.ops.mesh.bisect(plane_co=plane_co, plane_no=plane_no, use_fill=use_fill, clear_outer=clear_outer, clear_inner=clear_inner, threshold=threshold)
+	bpy.ops.object.mode_set(mode = 'OBJECT')
+	return o
 
 #OpenSCAD: "projection() creates 2d drawings from 3d models, to be exported to the dxf format. 
 #		   It works by projecting a 3D model to the (x,y) plane, with z at 0. 
@@ -640,7 +650,7 @@ def projection(o=None,cut=False):
 	if cut:							 
 		if bpy.context.active_object.mode is not 'EDIT':
 			bpy.ops.object.mode_set(mode = 'EDIT')	  
-		bpy.ops.mesh.bisect(plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), use_fill=cut, clear_inner=True, clear_outer=True, threshold=0.00000)
+		bpy.ops.mesh.bisect(plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), use_fill=True, clear_outer=True, clear_inner=True, threshold=0.00000)
 		bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
 		if bpy.context.active_object.mode is not 'OBJECT': 
 			bpy.ops.object.mode_set(mode = 'OBJECT')		
@@ -755,9 +765,9 @@ def rotate_extrude(o=None, fn=None, fs=None, fa=None):
 	#bpy.ops.mesh.delete(type='VERT')	
 	#bpy.ops.mesh.delete(type='EDGE')	
 	bpy.ops.mesh.select_all(action='SELECT')	
-	bpy.ops.mesh.remove_doubles()	
+	#bpy.ops.mesh.remove_doubles()	
 	bpy.context.area.type = prevAreaType  	# restore area / context
-	bpy.ops.mesh.normals_make_consistent(inside=False)
+	#bpy.ops.mesh.normals_make_consistent(inside=False)
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')	
 	o.location[2] += newz

@@ -130,7 +130,7 @@ def circle(r=10.0, d=-1, fill=False, center=True, fn=None, fs=None, fa=None):
 # OpenSCAD: polygon(points = [[x, y], ... ], paths = [[p1, p2, p3..], ... ], convexity = N);
 # TODO: http://wiki.blender.org/index.php/Dev:2.5/Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
 # fill seems to cause probs with rotate_extrude in some cases. ->faces at start/end
-def polygon(points, paths=[], fill=False):
+def polygon(points, paths=[], fill=True):
 	# Create mesh and object
 	me = bpy.data.meshes.new('p')
 	o = bpy.data.objects.new('p', me)
@@ -143,17 +143,22 @@ def polygon(points, paths=[], fill=False):
 	for p in points:
 		verts.append([p[0],p[1],0])
 	edges = []
-	if len(paths)== 0:
-		for i in range (0, len(points)-1):			
-			edges.append([i,i+1])
-		edges.append([len(points)-1, 0])	
+	if len(paths)== 0: # need to create path, opposite order to display correctly in Blender.
+		edges.append([0,len(points)-1])		
+		for i in range (len(points)-2,-1,-1): # range (0, len(points)-1):
+			edges.append([i+1,i])
 	else:
 		for p in paths:
-			for i in range(0, len(p)-1):
-				#print([p[i],p[i+1]])
-				edges.append([p[i],p[i+1]])		
-			#print([p[i],p[0]])
-			edges.append([p[i+1],p[0]])									
+			edges.append([p[0],p[len(p)-1]])		
+			#print([p[0],p[i+1]])
+			for i in range(len(p)-2,-1,-1):
+				edges.append([p[i+1],p[i]])		
+				#print([p[i+1],p[i]])	
+#			for i in range(0, len(p)-1):
+#				#print([p[i],p[i+1]])
+#				edges.append([p[i],p[i+1]])		
+#			#print([p[i],p[0]])
+#			edges.append([p[i+1],p[0]])							
 	faces = []
 	# cool code below to generate faces, however, holes in the polygon would be tricky :-)
 	# see path example with inner triangle
@@ -170,20 +175,22 @@ def polygon(points, paths=[], fill=False):
 	# print({'verts':verts} , {'edges': edges}, {'faces': faces} )
 	me.from_pydata(verts, edges, faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
 	# Update mesh with new data
-	me.update(calc_edges=True)		
+#	me.update(calc_edges=True)		
 	bpy.context.scene.objects.active = o
 	o.select = True
 	# Note: switching mode would fail before mesh is defined and object selected...
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
-	for el in o.data.vertices: el.select = True
-	for el in o.data.edges: el.select = True
+#	for el in o.data.vertices: el.select = True
+#	for el in o.data.edges: el.select = True
 	if fill is True:
-		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
-			bpy.ops.mesh.fill_grid()
-		except RuntimeError:
-			bpy.ops.mesh.fill() 	
-	bpy.ops.mesh.flip_normals()
+		bpy.ops.mesh.fill()
+#		seems like the more complicated version not needed after properly defining edge direction..		
+#		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
+#			bpy.ops.mesh.fill_grid()
+#		except RuntimeError:
+#			bpy.ops.mesh.fill() 	
+	#bpy.ops.mesh.flip_normals() ## want to avoid this for higher level functions (extrude...)
 	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	#bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
@@ -233,7 +240,9 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene
-	# print({'points': points} ,  {'faces': faces} )
+	print({'points': points} ,  {'faces': faces} )	
+	for face in faces: # need to reverse polygon vertex order from OpenSCAD->Blender logic...
+		face.reverse()
 	me.from_pydata(points, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  
 	# Update mesh with new data
 	me.update(calc_edges=True)		
@@ -243,13 +252,14 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	
 	for el in o.data.vertices: el.select = True
-	for el in o.data.edges: el.select = True
+	for el in o.data.edges: el.select = True	
 	if fill is True:
-		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
-			bpy.ops.mesh.fill_grid()
-		except RuntimeError:
-			bpy.ops.mesh.fill() 	
-	bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
+		bpy.ops.mesh.fill() 
+#		try:  # not a clean implementation, but should work for triangular shapes, holes, squares,etc
+#			bpy.ops.mesh.fill_grid()
+#		except RuntimeError:
+#			bpy.ops.mesh.fill() 	
+#	bpy.ops.mesh.flip_normals()  # blender treats normals the other way around than OpenSCAD...
 	#bpy.ops.mesh.edge_face_add() # add face...wrong results for polygones with holes...
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	return o

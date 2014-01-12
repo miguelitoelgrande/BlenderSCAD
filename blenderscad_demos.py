@@ -6,8 +6,8 @@
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-#import sys
-#sys.path.append("O:/BlenderStuff") 
+import sys
+sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
 from mathutils import Vector
@@ -227,7 +227,7 @@ def polyhedron_demo():
 		]
 	)
 
-#polyhedron_demo()
+#o=polyhedron_demo()
 
 def pyramid_demo():
 	return polyhedron(
@@ -237,7 +237,7 @@ def pyramid_demo():
 			[1,0,3],[2,1,3] ]                         # two triangles for square base
  )
 
-#pyramid_demo()
+#o=pyramid_demo()
 
 # Produce a multicolor 3D sin surface
 # source: http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#color	
