@@ -177,3 +177,18 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>multimatrix
 <li>...
 </ul>
+
+<h2>Preview: BlenderSCAD Panel</h2>
+
+
+<img src="imgs/Panel.png">
+
+<br/>
+
+As I need to see the "real" console output anyways, I've decided to switch from the single window-multiple area approach to a triple window approach.
+<img src="imgs/BlenderIDE2.png">
+
+Just tweak the pathes in the text opening in the startup code (right) and run it.
+This will make the Panel appear - no full-fledged add-on at the time being.
+
+<br/>
