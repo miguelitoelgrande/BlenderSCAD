@@ -6,8 +6,8 @@
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-import sys
-sys.path.append("O:/BlenderStuff") 
+#import sys
+#sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
 from mathutils import Vector
@@ -38,7 +38,7 @@ clearAllObjects()
 import time
 import datetime
 st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
-echo ("BEGIN", st)
+echo ("BEGIN ", st)
 ##############################
 
 
@@ -47,16 +47,22 @@ blenderscad.fa=20
 #o=cylinder(d=30,h=30,fn=3)
 #o=sphere(20,fs=1)
 #o=sphere(20,fn=5)
-o=sphere(20,fa=90)
+#o=sphere(20,fa=90)
 
 # simple polygon without explicit "path"
-#o=translate([80,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] , fill=True))
+#o=translate([-15,-25,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ,  fill=True))
+#o=linear_extrude(100,o,twist=90)
+
 # triangle with two triangular holes...
-#o=translate([20,0,0],polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]], fill=true))
+o=translate([20,0,0],polygon(points=[[0,0],[100,0],[0,100],[5,5],[30,5],[5,30],[25,25],[25,60],[60,25]], paths=[[3,4,5],[0,1,2],[6,7,8]], fill=true))
 # "Fish"
 #o=polygon(points=[[0,0],[100,0],[0,100],[5,5],[40,5],[5,40],[45,45],[45,80],[80,45]], paths=[[3,4,5],[0,1,2],[6,7,8]])
+
+#o=translate([20,10,0],polygon( points=[[0,0],[20,10],[10,20],[10,30],[30,40],[0,50]] ,  fill=True))
 #o=linear_extrude(30,o)
-#o=rotate_extrude (o,fn=300)
+
+o=rotate_extrude (o,fn=30)
+
 #o=rotate_extrude (o,fa=8)
 #o=blenderscad.core.dissolve(o)
 ##########################################################################
@@ -80,4 +86,4 @@ color(rands(0.0,1,3)) # random color last object. to see "FINISH" :-)
 import time
 import datetime
 st = datetime.datetime.fromtimestamp( time.time() ).strftime('%Y-%m-%d %H:%M:%S')
-echo ("FINISH", st)
+echo ("FINISH ", st)

@@ -60,7 +60,7 @@ example002()
 
 # experimenting with dissolve to cleanup shape..
 import bpy; o = bpy.context.scene.objects.active
-o = blenderscad.core.dissolve(o)
+#o = blenderscad.core.dissolve(o)
 #o= cleanup_object(o=o, quads=True)
 
 ###### Begin of Footer ##############################################################################

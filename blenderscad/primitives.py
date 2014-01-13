@@ -93,7 +93,7 @@ def sphere(r=1, d=-1, center=True,  fn=None, fs=None, fa=None):
 	if d != -1 :
 		  r= d/2;
 	segments=blenderscad.core.get_fragments_from_r( r=r, fn=fn, fs=fs, fa=fa )
-	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=segments, ring_count=16,location=(0.0,0.0,0.0), layers=mylayers)
+	bpy.ops.mesh.primitive_uv_sphere_add(size=r , segments=segments, ring_count=segments,location=(0.0,0.0,0.0), layers=mylayers)
 	#o = bpy.data.objects['Sphere'] # not safe enough if an earlier object named 'Sphere' exists...
 	o = bpy.context.active_object
 	o.name='sp' # +str(index)
@@ -241,7 +241,7 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene
-	print({'points': points} ,  {'faces': faces} )	
+	#print({'points': points} ,  {'faces': faces} )	
 	for face in faces: # need to reverse polygon vertex order from OpenSCAD->Blender logic...
 		face.reverse()
 	me.from_pydata(points, [], faces) # Create mesh fromverts, edges, faces. Use edges OR faces to avoid problems  

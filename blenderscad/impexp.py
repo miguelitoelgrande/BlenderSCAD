@@ -206,8 +206,8 @@ def surface(file, center=False, convexity=1):
 		points.append( [ox + 0, oy + i, min_val ] );
 	pts = len(points)-ptsOld #number of points inserted in last block
 	# should be 2x (rows-1) + 2* (cols-1)
-	print("pts:",pts)
-	faces.append( range(pc,pc+pts) )
+	#print("pts:",pts)
+	faces.append( list(range(pc,pc+pts)) )
 	#faces.append( range(pc+pts-1,pc-1,-1) ) # test reverse order -> wrong orientation of bottom
 	#
 	# result reuses the polyhedron implementation...

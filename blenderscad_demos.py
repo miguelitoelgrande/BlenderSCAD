@@ -6,8 +6,8 @@
 # if your blenderscad is NOT in the Blender module dir...
 #  ( <path>/blender-2.69-windows64/2.69/scripts/modules/blenderscad)
 # change this line to where your blenderscad is located (as a subdir)
-import sys
-sys.path.append("O:/BlenderStuff") 
+#import sys
+#sys.path.append("O:/BlenderStuff") 
 #from blenderscad.shapes import *
 
 from mathutils import Vector
@@ -38,16 +38,20 @@ echo ("BEGIN", st)
 ##############################
 
 
+
 ## List loaded blenderscad related (sub)modules
-#for mod in sys.modules.values():
-#	str1 = "|"+str(mod) + "|"
-#	#if str1.startswith("<module 'blenderscad") is True:
-#	if str1.find("blenderscad") >= 0:
-#		print (mod)
+def list_modules():
+	for mod in sys.modules.values():
+		str1 = "|"+str(mod) + "|"
+		#if str1.startswith("<module 'blenderscad") is True:
+		if str1.find("blenderscad") >= 0:
+			print (mod)
+	
+#list_modules()
 
 
 #str1 = "this is string example....wow!!!";
-#str2 = "exam";
+#str2 = "example";
 #
 #print str1.find(str2);
 #print str1.find(str2, 10);
@@ -170,7 +174,7 @@ def Demo2():
 	 )
 	)
 
-o=Demo2()
+#o=Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
@@ -390,7 +394,7 @@ D = 52
 A = 7  #Actually 6mm
 b=14 # holder height
 
-#o=FilamentHolderSimple(D,A,b)
+o=FilamentHolderSimple(D,A,b)
 
 
 #TODO: Fix error if "union" instead of "group":
@@ -522,7 +526,7 @@ print("num polygons: "+str(len(o.data.polygons)))
 
 ##########################################################################
 
-color(rands(0.0,1,3)) # random color last object. to see "FINISH" :-)
+#color(rands(0.0,1,3)) # random color last object. to see "FINISH" :-)
 
 # print timestamp and finish - sometimes it is easier to see differences in console then :-)
 import time

@@ -142,6 +142,13 @@ def color( rgba=(1.0,1.0,1.0, 0), o=None):
 		#echo("newCol:" , rgba)
 	if o is None:
 		o = bpy.context.object
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')		
+	# ensure we have already assigned a material.
+	print("called color()")
+	if blenderscad.mat.name not in o.data.materials.keys():
+			print("setting material to:") ; print(blenderscad.mat)
+			o.data.materials.append(blenderscad.mat)		
 	if len(rgba) == 3:
 		rgba=(rgba[0],rgba[1],rgba[2],0)
 	o.color = rgba
@@ -314,6 +321,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
+# TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
 def group(o1,*objs):
 	res = o1
 	o1.select = True
@@ -341,13 +349,14 @@ def remesh( o=None, apply=True):
 	rem = o.modifiers.new('Remesh', 'REMESH')
 	rem.mode = "SHARP"  # BLOCKS, SMOOTH
 	rem.scale = 0.9
-	rem.octree_depth = 8.0
+	rem.octree_depth = 4.0
 	rem.sharpness = 1.000
 	rem.threshold = 1.000
 	rem.use_smooth_shade = False
 	rem.use_remove_disconnected = True
-	# often forgotten: needs to be active!!
-	bpy.context.scene.objects.active = o
+	# often forgotten: needs to be active!! bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
 	if apply==True:
 		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Remesh')
 	o.name = 'rm('+o.name+')'
@@ -360,14 +369,18 @@ def decimate( o=None, apply=True ):
 	if o is None:   
 		o = bpy.context.scene.objects.active
 	else:
-		bpy.context.scene.objects.active = o	
+		bpy.context.scene.objects.active = o
+	#if bpy.context.active_object.mode is not 'EDIT':	
+	#	bpy.ops.object.mode_set(mode = 'EDIT' )
+	#bpy.ops.mesh.select_all(action="SELECT")		
 	de = o.modifiers.new('MyDecimate', 'DECIMATE')
 	#de.angle_limit = 0
 	de.iterations = 4
-	# often forgotten: needs to be active!!
-	bpy.context.scene.objects.active = o
+	# often forgotten: needs to be active!! bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
 	if apply==True:
-		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyDecimate')	
+		bpy.ops.object.modifier_apply(apply_as='DATA', modifier='MyDecimate')				
 	return o	
 	
 # wrapper for limited dissolve (attempt to cleanup model after bool op.)
@@ -433,7 +446,7 @@ def remove_duplicates():
 			bpy.ops.object.mode_set(mode='OBJECT', toggle=False) # set to Object Mode AGAIN
 	return obj
 	
-def cleanup_object(o=None,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False):
+def cleanup_object(o=None,removeDoubles=False,quads=False,subdivide=False, beautify=False, normalsRecalcOut=False):
 	#echo("cleanup", [removeDoubles, quads, subdivide, normalsRecalcOut])		
 	if o is None:	
 		o = bpy.context.scene.objects.active
@@ -444,10 +457,13 @@ def cleanup_object(o=None,removeDoubles=False,quads=False,subdivide=False, norma
 	bpy.ops.mesh.select_all(action="SELECT")
 	if removeDoubles:
 		bpy.ops.mesh.remove_doubles(threshold=0.00001)
-	bpy.ops.mesh.select_all(action="SELECT")
+	bpy.ops.mesh.select_all(action="SELECT")		
 	if quads:
 		bpy.ops.mesh.tris_convert_to_quads(limit=0.000001)
 	bpy.ops.mesh.select_all(action="SELECT")		
+	if beautify: #try to get rid of degenerated geometry
+		bpy.ops.mesh.beautify_fill()
+	bpy.ops.mesh.select_all(action="SELECT")	
 	if normalsRecalcOut:	
 		bpy.ops.mesh.normals_make_consistent(inside=False) #recalc normals on outside
 	#bpy.ops.mesh.fill_holes()
@@ -528,8 +544,9 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 		bpy.data.objects.remove(objB)
 		bpy.data.meshes.remove(mesh)
 	else:
-		objB.hide_select = True
-		objB.hide = True
+		#objB.hide_select = True
+		#objB.hide = True
+		objB.draw_type='WIRE'
 #	cleanup_object(objA, removeDoubles=True)
 	#echo("boolOpEND")
 	#bpy.context.scene.update()	
@@ -563,16 +580,17 @@ def difference(o1,*objs, apply=True):
 		if obj != None:
 			tmp=tmp+","+obj.name
 #			cleanup_object(obj, removeDoubles=True, subdivide=False)	
+			obj.draw_type="WIRE"
 			#res = booleanOp(res,obj, boolOp='DIFFERENCE', apply=apply)
 			if to is None:
 				to = obj
 			else:
 				#to = join(to,obj)
-				to = booleanOp(obj,to, boolOp='UNION', apply=apply)	
-	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)			
+				to = booleanOp(obj,to, boolOp='UNION', apply=apply)
+	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)	
 	res.name = 'd('+tmp+')'
 	res.data.name = 'd('+tmp+')'
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, beautify=False, normalsRecalcOut=False)
 	return res
 
 # experimental alternative: instead of pairwise boolean, first join all objs to be diffed...
@@ -626,8 +644,7 @@ def hull(o1,*objs):
 	#	v.select = True
 		#print (v)
 	#bpy.ops.mesh.select_all(action='SELECT')
-	bpy.ops.mesh.convex_hull(use_existing_faces=False)
-	#bpy.ops.mesh.convex_hull(join_triangles=True, make_holes=True, limit=3.14159,delete_unused=True, use_existing_faces=False)
+	bpy.ops.mesh.convex_hull(use_existing_faces=False, delete_unused=True, join_triangles=True, limit=0.000001, make_holes=False)
 	# TODO: optimize params to keep shapes clean?
     #delete_unused (boolean, (optional)) – Delete Unused, Delete selected elements that are not used by the hull
     #use_existing_faces (boolean, (optional)) – Use Existing Faces, Skip hull triangles that are covered by a pre-existing face
@@ -643,14 +660,14 @@ def hull(o1,*objs):
 	return o
 
 # wrap Blender's bisect() operator. 
-def cut(o=None, plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), use_fill=True, clear_outer=True, clear_inner=True, threshold=0.00000):
+def cut(o=None, outer=True, inner=True, fill=True, plane_co=(0.0, 0.0, 0.0), plane_no=(0.0, 0.0, 1.0), threshold=0.00000):
 	if o is None:   
 		o = bpy.context.scene.objects.active
 	else:
 		bpy.context.scene.objects.active = o						 
 	if bpy.context.active_object.mode is not 'EDIT':
 		bpy.ops.object.mode_set(mode = 'EDIT')	  
-	bpy.ops.mesh.bisect(plane_co=plane_co, plane_no=plane_no, use_fill=use_fill, clear_outer=clear_outer, clear_inner=clear_inner, threshold=threshold)
+	bpy.ops.mesh.bisect(plane_co=plane_co, plane_no=plane_no, use_fill=fill, clear_outer=outer, clear_inner=inner, threshold=threshold)
 	bpy.ops.object.mode_set(mode = 'OBJECT')
 	return o
 
@@ -724,7 +741,7 @@ def linear_extrude(height, o=None , center=True, convexity=-1, twist=0):
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	if twist != 0:	
 		mod1 = o.modifiers.new('Mod1', 'SIMPLE_DEFORM')
-		mod1.angle = twist	* (math.pi/180)
+		mod1.angle = math.radians(twist) # = twist	* (math.pi/180)
 		#bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Mod1')				
 	#o.data.materials.append(mat)
 	#o.color = blenderscad.defColor
@@ -813,7 +830,6 @@ def rotate_extrude(o=None, fn=None, fs=None, fa=None):
 #rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[2,1],[1,2],[1,3],[3,4],[0,5]] ))) 
 #rotate_extrude( translate([10,10,10] , polygon( points=[[0,0],[4,0],[4,4],[0,4]]) )) 
 #rotate_extrude( translate([9-2, 2, 0], circle(r = 2)))
-
 
 
 # an extra not present in OpenSCAD... using Blender's "bevel" Modifier

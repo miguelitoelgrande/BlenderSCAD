@@ -88,9 +88,11 @@ def initns(nsdict):
 	#
 	public_core = [  'listAllObjects', 'clearAllObjects', 'color', 'echo', 'str'
 	                 ,  'difference', 'union', 'intersection', 'join', 'group'
-					 , 'resize', 'rotate', 'mirror', 'translate', 'round_edges', 'scale'
-	                 , 'hull', 'linear_extrude', 'rotate_extrude', 'remesh'	, 'remove_duplicates', 'projection'
-					# 'booleanOp', 'cleanup_object'
+					 , 'resize', 'rotate', 'mirror', 'translate', 'scale'
+	                 , 'hull', 'linear_extrude', 'rotate_extrude', 'projection'
+					 , 'remove_duplicates', 'round_edges', 'cut'
+					# call those more explicitly... blendercad.core.* 
+					# ,'booleanOp', 'remesh','cleanup_object', 'dissolve', ''
 				]
 	for name in public_core:		    
 		nsdict.update({name: getattr(blenderscad.core, name)  })

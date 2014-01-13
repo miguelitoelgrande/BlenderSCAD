@@ -67,7 +67,7 @@ def example002():
 #projection( translate([0,0,25], rotate([90,0,0], example002())));
 #translate([0,0,-6], rotate([90,0,0], example002()))
 #dissolve( translate([0,0,-6], rotate([90,0,0], example002())) );
-o=projection(cut=true, o=translate([0,0,-6], rotate([90,0,0], example002())));
+#o=projection(cut=true, o=translate([0,0,-6], rotate([90,0,0], example002())));
 #o=projection(cut=false, o=translate([0,0,-60], rotate([90,0,0], example002())));
 #num vertices: 313
 #num polygons: 207
@@ -79,8 +79,11 @@ o=projection(cut=true, o=translate([0,0,-6], rotate([90,0,0], example002())));
 #o=projection( cut=false, o=translate([0,0,-5], rotate([45,0,45], cube(20))));
 
 #linear_extrude(10,o)
-rotate_extrude(o)
-o=blenderscad.core.dissolve(o)
+#o=rotate_extrude(o)
+o=example002()
+o=blenderscad.core.cleanup_object(o, beautify=True)
+#o=hull(o)
+#o=blenderscad.core.dissolve(o)
 
 #cube(20)
 
