@@ -179,10 +179,22 @@ A last word of "warning": Pay attention to where your source file is saved.
 </ul>
 
 <h2>Preview: BlenderSCAD Panel</h2>
-
+I wanted to have some interactivity to try some additional operators and tweaks easily.
+As this is a really simple to do in Blender, I've defined a panel.
+Here is a little preview:
 
 <img src="imgs/Panel.png">
 
+It mainly reuses some extra code I've written for the BlenderSCAD enhancements.
+A very handy thing are the multi-object boolean operations:
+3 clicks to have a cube, a cylinder and a sphere on the screen, a couple of clicks to align them,
+selecting several objects (Shift+Right Mouse), then just hit one of the Boolean buttons.
+Behind the scenes, it will create the required modifiers and apply them. A great productivity gain, I would say.
+Give it a try. Almost as convenient as Tinkercad (Group and Hole and Undo/Ungroup) still to be done.
+The object cleanup (using limited dissolve) really cleans up most resulting geometry. 
+
+Speaking of geometry: The user will not even realize when the code is switching from Object to Edit mode (something not always straight forward in Blender, especially when scripting via Python?). There is a Debug-Button which will toggle displaying all object edges even in object mode.
+Blender could/can be so easy!
 <br/>
 
 As I need to see the "real" console output anyways, I've decided to switch from the single window-multiple area approach to a triple window approach.
