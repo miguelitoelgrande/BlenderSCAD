@@ -15,6 +15,15 @@ if mat is None:
 	mat=bpy.data.materials.new('useObjectColor')
 	mat.use_object_color=1
 	
+# for Grouping, "invisible", but selectable :-)
+# need to be in "Texture" Display mode...
+matTrans = bpy.data.materials.get('Transparent')
+if matTrans is None:
+	matTrans=bpy.data.materials.new('Transparent')
+	matTrans.use_transparency=True
+	matTrans.transparency_method='Z_TRANSPARENCY'
+	matTrans.alpha = 0.0
+	
 
 # some colors... 
 #black = (0.00,0.00,0.00,0)

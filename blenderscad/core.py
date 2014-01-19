@@ -145,13 +145,19 @@ def color( rgba=(1.0,1.0,1.0, 0), o=None):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')		
 	# ensure we have already assigned a material.
-	print("called color()")
+	if o.draw_type == 'WIRE': # 'WIRE' seems to cause probe /w material...
+		return o
+	#print("called color() with:"); print(blenderscad.mat)
 	if blenderscad.mat.name not in o.data.materials.keys():
-			print("setting material to:") ; print(blenderscad.mat)
-			o.data.materials.append(blenderscad.mat)		
+			#print("setting material to:") ; print(blenderscad.mat)
+			if len(o.data.materials)>0:
+				o.data.materials[0]=blenderscad.mat
+			else:
+				o.data.materials.append(blenderscad.mat)		
 	if len(rgba) == 3:
 		rgba=(rgba[0],rgba[1],rgba[2],0)
 	o.color = rgba
+	o.draw_type='SOLID'
 	return o
 
 # color('orange', cube(20) )
@@ -322,7 +328,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
-def group(o1,*objs):
+def group_old(o1,*objs):
 	res = o1
 	o1.select = True
 	bpy.context.scene.objects.active = o1   
@@ -337,6 +343,95 @@ def group(o1,*objs):
 	bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)	
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
+
+
+# NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
+# therefore different colors. However, need to rework subsequent modifiers?
+# TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
+def group(o1,*objs):
+	res = o1
+	#creating a boundary box, similar to "empty", but using real box for "dimension" property...
+	bpy.ops.mesh.primitive_cube_add(location=(0.0,0.0,0.0), layers=blenderscad.mylayers)
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
+	bb = bpy.context.active_object # bb ~ reference to this bounding box representing group
+	bb.data.materials.append(blenderscad.matTrans)
+	bb.draw_type='TEXTURED' # TODO: set 3D View to Textured view..
+	bb.hide_render=True
+	bb.name="group"
+	bb.data.name="bbox"
+
+	bpy.ops.object.select_all(action='DESELECT')	
+	o1.select = True
+	bpy.context.scene.objects.active = o1
+	#objs = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
+	objs=list(objs)
+	objs.append(o1)
+	#go through all formerly selected objects, we need the overall min/max in all three dims.
+	# location set to center...
+	gminx = None; gmaxx=None;gminy=None; gmaxy=None; gminz=None; gmaxz=None;
+	for obj in objs:
+		if obj != None:
+			bpy.context.scene.objects.active = obj
+			bpy.ops.object.transform_apply(location=True, scale=True, rotation=True)
+			scale = obj.scale
+			minx = obj.bound_box[0][0] * scale.x  +  obj.location[0]; 
+			gminx = minx if gminx is None or gminx>minx else gminx;
+			maxx = obj.bound_box[4][0] * scale.x  +  obj.location[0];
+			gmaxx = maxx if gmaxx is None or gmaxx<maxx else gmaxx;		
+			miny = obj.bound_box[0][1] * scale.y  +  obj.location[1];
+			gminy = miny if gminy is None or gminy>miny else gminy;
+			maxy = obj.bound_box[2][1] * scale.y  +  obj.location[1];
+			gmaxy = maxy if gmaxy is None or gmaxy<maxy else gmaxy;		
+			minz = obj.bound_box[0][2] * scale.z  +  obj.location[2];
+			gminz = minz if gminz is None or gminz>minz else gminz;
+			maxz = obj.bound_box[1][2] * scale.z  +  obj.location[2];
+			gmaxz = maxz if gmaxz is None or gmaxz<maxz else gmaxz;
+			#print(('obj bounds',minx,maxx,miny,maxy,minz,maxz));
+			#print(('global:',gminx, gmaxx, gminy, gmaxy, gminz, gmaxz));
+	dx = gmaxx - gminx
+	dy = gmaxy - gminy
+	dz = gmaxz - gminz
+	bb.dimensions= (dx,dy,dz)
+	bb.location = (gminx+dx/2,gminy+dy/2,gminz+dz/2) # location as center of bbox	
+	bpy.context.scene.objects.active = bb
+	bpy.ops.object.select_all(action='DESELECT')
+	for obj in objs:
+		obj.select=True
+		bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)
+		obj.hide_select = True
+		obj.select=False
+		#Keep Hierarchy selectable, but avoid transforming children independent of parent.
+		obj.lock_location = (True,True,True)
+		obj.lock_rotation = (True,True,True)
+		obj.lock_scale	 = (True,True,True)		
+	bb.select=True		
+	return bb
+
+# reverse effect of ungroup
+def ungroup(root):
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')
+	bpy.ops.object.select_all(action='DESELECT')
+	objs= root.children
+	for obj in objs:
+		#print((root.name,":",obj.name))
+		obj.hide_select = False
+		obj.lock_location = (False,False,False)
+		obj.lock_rotation = (False,False,False)
+		obj.lock_scale	 = (False,False,False)
+		obj.select=True
+		bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
+		## remove root
+		mesh = root.data
+		bpy.context.scene.objects.unlink(root)	
+		bpy.data.objects.remove(root)
+		bpy.data.meshes.remove(mesh)		
+	return objs[0]
+
+	
+#active_material
+
 
 # saw a hint that remesh may fix some boolean ops probs..
 def remesh( o=None, apply=True):
@@ -833,17 +928,21 @@ def rotate_extrude(o=None, fn=None, fs=None, fa=None):
 
 
 # an extra not present in OpenSCAD... using Blender's "bevel" Modifier
-def round_edges(width=1.0, segments=4, verts_only=False, angle_limit=180,o=None, apply=True ):
+# angle again in radians... 0.785398 # math.radians(45) degrees
+def round_edges(width=5.0, segments=4, verts_only=False, angle_limit=0.785398,o=None, apply=True ):
 	if o is None:	
 		o = bpy.context.scene.objects.active
 	else:
-		bpy.context.scene.objects.active = o	
+		bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'OBJECT': 
+		bpy.ops.object.mode_set(mode = 'OBJECT')			
 	#bpy.ops.object.select_all(action = 'DESELECT')
 	#o.select = True
 	bev = o.modifiers.new('MyBevel', 'BEVEL')
 	bev.width = width
 	bev.segments = segments
 	bev.use_only_vertices= verts_only
+	bev.limit_method = 'ANGLE'
 	bev.angle_limit = angle_limit
 	# often forgotten: needs to be active!!
 	bpy.context.scene.objects.active = o

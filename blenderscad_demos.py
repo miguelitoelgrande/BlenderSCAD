@@ -174,7 +174,7 @@ def Demo2():
 	 )
 	)
 
-#o=Demo2()
+o=Demo2()
 
 
 # OpenJSCAD.org Logo :-)	  
