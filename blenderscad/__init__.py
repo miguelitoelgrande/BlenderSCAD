@@ -9,43 +9,41 @@ import bpy
 mylayers = [False]*20
 mylayers[0] = True
 
-# need to setup our default material
-mat = bpy.data.materials.get('useObjectColor')
-if mat is None:
-	mat=bpy.data.materials.new('useObjectColor')
-	mat.use_object_color=1
-	
-# for Grouping, "invisible", but selectable :-)
-# need to be in "Texture" Display mode...
-matTrans = bpy.data.materials.get('Transparent')
-if matTrans is None:
-	matTrans=bpy.data.materials.new('Transparent')
-	matTrans.use_transparency=True
-	matTrans.transparency_method='Z_TRANSPARENCY'
-	matTrans.alpha = 0.0
-	
+mat = None
 
-# some colors... 
-#black = (0.00,0.00,0.00,0)
-#yellow = (1.00,1.00,0.00,0)
-# for full color list:
-#sys.path.append("<path to>/BlenderSCAD") 
-#from blenderscad_colors import *
-
-# default color for object creators below...
-defColor = (1.0,1.0,0.1,0)
-
-#Emulate OpenSCAD Special variables  blenderscad.{fs,fa,fn}
-#$fa - minimum angle  $fn = 360 / $fa    / default: $fa = 12 -> segments = 30
-fa=12;
-#$fs - minimum size   default: 1 
-fs=1;
-#$fn - number of fragments  | override of $fa/$fs , default = 0 , example: 36-> every 10 degrees
-fn=0;
-
-if bpy.context.active_object is not None:
-	if bpy.context.active_object.mode is not 'OBJECT': 
-		bpy.ops.object.mode_set(mode = 'OBJECT')
+def main():
+	global mat, matTrans, defColor, fa, fs, fn
+	# need to setup our default material
+	mat = bpy.data.materials.get('useObjectColor')
+	if mat is None:
+		mat=bpy.data.materials.new('useObjectColor')
+		mat.use_object_color=1		
+	# for Grouping, "invisible", but selectable :-)
+	# need to be in "Texture" Display mode...
+	matTrans = bpy.data.materials.get('Transparent')
+	if matTrans is None:
+		matTrans=bpy.data.materials.new('Transparent')
+		matTrans.use_transparency=True
+		matTrans.transparency_method='Z_TRANSPARENCY'
+		matTrans.alpha = 0.0	
+	# some colors... 
+	#black = (0.00,0.00,0.00,0)
+	#yellow = (1.00,1.00,0.00,0)
+	# for full color list:
+	#sys.path.append("<path to>/BlenderSCAD") 
+	#from blenderscad_colors import *
+	# default color for object creators below...
+	defColor = (1.0,1.0,0.1,0)
+	#Emulate OpenSCAD Special variables  blenderscad.{fs,fa,fn}
+	#$fa - minimum angle  $fn = 360 / $fa    / default: $fa = 12 -> segments = 30
+	fa=12;
+	#$fs - minimum size   default: 1 
+	fs=1;
+	#$fn - number of fragments  | override of $fa/$fs , default = 0 , example: 36-> every 10 degrees
+	fn=0;
+	if bpy.context.active_object is not None:
+		if bpy.context.active_object.mode is not 'OBJECT': 
+			bpy.ops.object.mode_set(mode = 'OBJECT')
 	
 # from blenderscad.colors import *
 # from blenderscad.math import * 
@@ -90,8 +88,10 @@ def initns(nsdict):
 		if name.find("__") < 0 and name !="bpy":
 			nsdict.update({name: getattr(blenderscad.colors, name)  })			
 	#
-	# >>> print( dir(blenderscad.primitives))
-	public_prim = [ 'circle', 'cube', 'cylinder', 'mat', 'mylayers', 'polygon', 'polyhedron', 'sphere', 'square']
+	if blenderscad.mat is None:	
+		blenderscad.main()
+	# >>> print( dir(blenderscad.primitives))		
+	public_prim = [ 'circle', 'cube', 'cylinder', 'mylayers', 'polygon', 'polyhedron', 'sphere', 'square']		
 	for name in public_prim:
 		nsdict.update({name: getattr(blenderscad.primitives, name)  })	
 	#
@@ -119,8 +119,8 @@ def initns(nsdict):
 	
 			 
 			 
-
-	
+if __name__ == "__main__":
+	main()
 	
 	
 

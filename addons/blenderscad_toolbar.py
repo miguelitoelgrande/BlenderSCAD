@@ -1,7 +1,53 @@
-## 
-##  This file is obsolete and will be removed with the next cleanup.
-##  addons/blenderscad_toolbar.py has now exactly this functionality.
-##
+# ***** BEGIN GPL LICENSE BLOCK *****
+#
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ***** END GPL LICENCE BLOCK *****
+
+bl_info = {
+    "name": "BlenderSCAD toolbar",
+    "author": "Michael Mlivoncic",
+    "version": (0, 0, 1),
+    "blender": (2, 69, 0),
+    "location": "Tools Panel",
+    "description": "Proof of concept UI mod for Thinkercad/OpenSCAD like operations",
+    "wiki_url": "https://github.com/miguelitoelgrande/BlenderSCAD",
+    "tracker_url": "https://github.com/miguelitoelgrande/BlenderSCAD",
+    "category": "Object"}
+
+
+import bpy
+import os
+
+# uncomment the following two lines to the path where your "blenderscad" module folder will be
+# (other than Blender's default location for modules)
+#import sys
+#sys.path.append("O:/BlenderStuff") 
+
+
+#filepath ="O:/BlenderStuff/blenderscad/toolbar.py"
+#global_namespace = {"__file__": filepath, "__name__": "__main__"}
+#with open(filepath, 'rb') as file: 
+#	exec(compile(file.read(), filepath, 'exec'), global_namespace);
+
+	
+settings = {
+    }	
+
+
 ## Adding a BlenderSCAD QuickAccess panel to the 3D view.
 ## by Michael Mlivoncic
 ## E.g. create to primitives and perform Boolean Difference with 3 clicks!
@@ -33,9 +79,14 @@ for mo in rel:
 ########################
 
 import blenderscad
+import blenderscad.colors
+import blenderscad.math
+import blenderscad.core	
+import blenderscad.primitives
+import blenderscad.impexp
 #from blenderscad.shapes import *	# optional 
 
-blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
+#blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
 
 ###############################
 class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
@@ -44,10 +95,12 @@ class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
 	bl_description = "Shortcut to init material to object color"
 	
 	def execute(self, context):
+		if blenderscad.mat is None:
+			blenderscad.main()		
 		o = context.object
 #	  if blenderscad.mat.name not in o.data.materials.keys():
 #		  o.data.materials.append(blenderscad.mat)
-		blenderscad.core.color(rands(0,1,3),o)
+		blenderscad.core.color(blenderscad.math.rands(0,1,3),o)
 		return {'FINISHED'}
 
 class VIEW3D_OT_blenderscad_remesh(bpy.types.Operator):
@@ -418,13 +471,13 @@ class VIEW3D_MT_blenderscad(bpy.types.Menu):
 #################
 
 
+
 if __name__ == "__main__":
 	register()
 	bpy.types.VIEW3D_MT_object.remove(  bpy.types.VIEW3D_MT_object.draw )
 	bpy.types.VIEW3D_MT_object.draw._draw_funcs.clear()	
 	#bpy.types.VIEW3D_MT_object.remove(  MyObjectMenu_draw )	
-	bpy.types.VIEW3D_MT_object.append(  MyObjectMenu_draw )
-	
+	bpy.types.VIEW3D_MT_object.append(  MyObjectMenu_draw )	
 #	bpy.utils.register_class(VIEW3D_MT_blenderscad)
 #	bpy.types.VIEW3D_HT_header.remove(  VIEW3D_MT_blenderscad.draw )
 #	bpy.types.VIEW3D_HT_header.prepend( VIEW3D_MT_blenderscad.draw )

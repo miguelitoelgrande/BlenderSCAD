@@ -12,7 +12,7 @@ import blenderscad # for "global" variables fn, defColor,...
 #from blenderscad.math import *  # true, false required...
 
 mylayers=blenderscad.mylayers
-mat=blenderscad.mat
+#mat=blenderscad.mat
 	
 # Construct a cube mesh 
 # bpy.ops.mesh.primitive_cube_add(view_align=False, enter_editmode=False, location=(0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), layers=(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
@@ -30,9 +30,10 @@ def cube(size=(1.0,1.0,1.0), center=False):
 	o.name='cu' # +str(index)
 	o.data.name='cu'
 	# simple color will only display via my def. Material setting
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	# just some default color
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	# scale
 	#bpy.ops.transform.resize(value=size)
 	#bpy.ops.object.transform_apply(scale=True)
@@ -78,8 +79,9 @@ def cylinder(h = 1, r=1, r1 = -1, r2 = -1, center = False, d=-1, d1=-1, d2=-1, f
 		segments=blenderscad.core.get_fragments_from_r( r=r, fn=fn, fs=fs, fa=fa )
 		o =_cylinder(h,r,segments)
 	# just a suitable default material and some default color
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	if center==False:
 		#bpy.ops.transform.translate(value=(0.0,0.0,h/2.0))  # causes "convertViewVec: called in an invalid context"
 		o.location += Vector( (0.0,0.0,h/2.0)  )
@@ -99,9 +101,10 @@ def sphere(r=1, d=-1, center=True,  fn=None, fs=None, fa=None):
 	o.name='sp' # +str(index)
 	o.data.name='sp'
 	# simple color will only display via my def. Material setting
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	# just some default color
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	# scale
 	#bpy.ops.transform.resize(value=size)
 	#bpy.ops.object.transform_apply(scale=True)
@@ -123,8 +126,9 @@ def circle(r=10.0, d=-1, fill=False, center=True, fn=None, fs=None, fa=None):
 	o = bpy.context.active_object
 	o.name='ci' # +str(index)
 	o.data.name='ci'
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	return o
 	
 
@@ -135,8 +139,9 @@ def polygon(points, paths=[], fill=True):
 	# Create mesh and object
 	me = bpy.data.meshes.new('p')
 	o = bpy.data.objects.new('p', me)
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene
@@ -236,8 +241,9 @@ def polyhedron(points, faces=[], triangles=[], fill=False):
 	# Create mesh and object
 	me = bpy.data.meshes.new('p')
 	o = bpy.data.objects.new('p', me)
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	o.color = blenderscad.defColor
+	o.draw_type='SOLID'
 	o.location = (0.0,0.0,0.0)
 	o.show_name = True
 	bpy.context.scene.objects.link(o) 	# Link object to scene

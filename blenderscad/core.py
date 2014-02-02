@@ -49,7 +49,6 @@ import blenderscad # for "global" variables fn, defColor,...
 #from blenderscad.math import *  # true, false required...
 
 # need to setup/reference our default material
-mat=blenderscad.mat
 #mat = bpy.data.materials.get('useObjectColor')
 #if mat is None:
 #	mat=bpy.data.materials.new('useObjectColor')
@@ -345,6 +344,12 @@ def group_old(o1,*objs):
 	return res
 
 
+#TODO: recursive "toggle_hierarchy": from selectable and selected to not selectable except root/parent object.
+## could be recycled in Duplicate/delete actions... Delete with definite removal of intermediate objects
+# Building blocks:
+# bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
+
+	
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
@@ -355,12 +360,13 @@ def group(o1,*objs):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	bb = bpy.context.active_object # bb ~ reference to this bounding box representing group
-	bb.data.materials.append(blenderscad.matTrans)
-	bb.draw_type='TEXTURED' # TODO: set 3D View to Textured view..
+	#bb.data.materials.append(blenderscad.matTrans)
+	#bb.draw_type='TEXTURED' # TODO: set 3D View to Textured view..
+	bb.draw_type='BOUNDS' # same effect and probably faster: bounds only...
+	bb.show_name=True
 	bb.hide_render=True
 	bb.name="group"
 	bb.data.name="bbox"
-
 	bpy.ops.object.select_all(action='DESELECT')	
 	o1.select = True
 	bpy.context.scene.objects.active = o1
@@ -409,11 +415,13 @@ def group(o1,*objs):
 	return bb
 
 # reverse effect of ungroup
-def ungroup(root):
+def ungroup(root=None):	
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
-	bpy.ops.object.select_all(action='DESELECT')
+	if root is None:	
+		root = bpy.context.scene.objects.active
 	objs= root.children
+	# TODO: if no children, try to split on "mesh"-level:  bpy.ops.mesh.separate(type='LOOSE')
 	for obj in objs:
 		#print((root.name,":",obj.name))
 		obj.hide_select = False
@@ -421,12 +429,14 @@ def ungroup(root):
 		obj.lock_rotation = (False,False,False)
 		obj.lock_scale	 = (False,False,False)
 		obj.select=True
+		bpy.context.scene.objects.active = obj 
 		bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
-		## remove root
-		mesh = root.data
-		bpy.context.scene.objects.unlink(root)	
-		bpy.data.objects.remove(root)
-		bpy.data.meshes.remove(mesh)		
+	## remove root
+	print (root)
+	mesh = root.data
+	bpy.context.scene.objects.unlink(root)	
+	bpy.data.objects.remove(root)
+	bpy.data.meshes.remove(mesh)		
 	return objs[0]
 
 	

@@ -9,7 +9,7 @@ import blenderscad
 #from blenderscad import *  # contains blenderscad core, primitives, math and colors
 
 
-mat = blenderscad.mat
+#mat = blenderscad.mat
 	
 	
 # OpenSCAD: import_stl("filename.stl", convexity = <val>);
@@ -17,7 +17,7 @@ mat = blenderscad.mat
 def import_stl(file , layer="", convexity=10):
 	bpy.ops.import_mesh.stl(filepath=file)
 	o = bpy.context.active_object
-	o.data.materials.append(mat)
+	o.data.materials.append(blenderscad.mat)
 	o.color = blenderscad.defColor
 	return o
 
