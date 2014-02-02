@@ -144,7 +144,7 @@ def color( rgba=(1.0,1.0,1.0, 0), o=None):
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')		
 	# ensure we have already assigned a material.
-	if o.draw_type == 'WIRE': # 'WIRE' seems to cause probe /w material...
+	if o.draw_type == 'WIRE' or o.draw_type == 'BOUNDS': # 'WIRE' seems to cause probe /w material...
 		return o
 	#print("called color() with:"); print(blenderscad.mat)
 	if blenderscad.mat.name not in o.data.materials.keys():

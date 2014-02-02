@@ -103,6 +103,30 @@ class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
 		blenderscad.core.color(blenderscad.math.rands(0,1,3),o)
 		return {'FINISHED'}
 
+#	Left Mouse Multiselect - For tablet devices :-)
+class VIEW3D_OT_blenderscad_multiselect(bpy.types.Operator):
+	bl_idname = "view3d.blenderscad_multiselect"
+	bl_label = "multiselect"
+	bl_description = "Override select behaviour to 'toggle' to  allow for multi-object-selections"
+	
+	def execute(self, context):
+		#keyMap = bpy.context.window_manager.keyconfigs.active.keymaps['3D View'] # does not activate changes?
+		keyMap = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+		for item in keyMap.keymap_items:
+			#if item.id==99:
+			#	print( [item.active, item.id, item.name, item.idname, item.map_type, item.type, item.propvalue] );
+			#	# [True, 99, 'Activate/Select', 'view3d.select', 'MOUSE', 'SELECTMOUSE', 'NONE']
+			#	print( [item.any, item.shift, item.ctrl, item.alt, item.oskey ] );
+			#	# [False, False, False, False, False]
+			#	dict(item.properties)
+			#	# {'toggle': 0, 'deselect': 0, 'extend': 0, 'center': 0, 'object': 0, 'enumerate': 0}			
+			if [item.name, item.idname, item.map_type, item.type, item.propvalue] == [ 'Activate/Select', 'view3d.select', 'MOUSE', 'SELECTMOUSE', 'NONE'] and [item.any, item.shift, item.ctrl, item.alt, item.oskey ] ==  [False, False, False, False, False]:
+					#print("BINGO!");
+					setattr(item.properties, 'toggle', False==getattr(item.properties,'toggle') )	
+					#dict(item.properties)
+					#item.active=False
+		return {'FINISHED'}					
+				
 class VIEW3D_OT_blenderscad_remesh(bpy.types.Operator):
 	bl_idname = "view3d.blenderscad_remesh"
 	bl_label = "remesh"
@@ -246,6 +270,7 @@ class VIEW3D_OT_blenderscad_copy(bpy.types.Operator):
 
 ########################################################
 bpy.utils.register_class(VIEW3D_OT_blenderscad_color)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_multiselect)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_remesh)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_subdivide)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_beautify)
@@ -293,8 +318,11 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 		split = layout.split()
 		col = split.column(align=True)
 		col2 = split.column(align=True)
-
-		col.operator("view3d.blenderscad_color", text="Colorize", icon='COLOR')
+		
+		col.operator("ed.undo", text="Undo", icon='LOOP_BACK')		
+		col2.operator("ed.redo", text="Redo", icon='LOOP_FORWARDS')		
+		
+		col.operator("view3d.blenderscad_color", text="Colorize", icon='COLOR')		
 		col.operator("view3d.blenderscad_debug", text="ShowEdges", icon='WIRE')  # WIRE
 		col.operator("view3d.blenderscad_dissolve", text="CleanUp", icon='SAVE_PREFS') # MOD_BOOLEAN
 		col.operator("view3d.blenderscad_round", text="Round", icon='MOD_BEVEL') # MOD_BOOLEAN
@@ -302,6 +330,9 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 		col.operator("view3d.blenderscad_decimate", text="Decimate", icon='MOD_DECIM')
 		col.operator("view3d.blenderscad_beautify", text="Beautify", icon='SCENE_DATA')
 		col.operator("view3d.blenderscad_subdivide", text="Subdivide", icon='OUTLINER_OB_LATTICE')		
+			
+		col2.operator("view3d.blenderscad_multiselect", text="MultiSelect", icon='STICKY_UVS_LOC' )
+		#col2.prop(scn, 'MyInt', icon='STICKY_UVS_LOC', toggle=True)
 		col2.operator("view3d.blenderscad_copy", text="Duplicate", icon='GHOST')		
 		col2.operator("view3d.blenderscad_hull", text="Hull", icon='MOD_SUBSURF')
 		col2.operator("view3d.blenderscad_union", text="Union", icon='ROTATECOLLECTION')
@@ -311,6 +342,8 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 		col2.operator("view3d.blenderscad_group", text="Group", icon='GROUP')
 		col2.operator("view3d.blenderscad_ungroup", text="UnGroup", icon='STICKY_UVS_DISABLE')
 
+	
+		
 		#join, group, Difference , Union, 
 
 		#col.operator("wm.console_toggle()", text="Console (Win)", icon='CONSOLE')
@@ -322,9 +355,7 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 #Link: CONSTRAINT_DATA
 #Project, Mirror,  MOD_UVPROJECT	MOD_MIRROR
 # cleanup/repair:  HELP RECOVER_AUTO SAVE_PREFS
-#Struktur... MESH_ICOSPHERE MOD_LATTICE  OUTLINER_OB_MESH
-# Undo/Redo: LOOP_BACK  LOOP_FORWARDS
-
+#Structure... MESH_ICOSPHERE MOD_LATTICE  OUTLINER_OB_MESH
 
 		#################################################  
 		row = layout.row()
