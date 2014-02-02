@@ -323,7 +323,7 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	
 #resize([15,5,20], cube(size=5)	)
 
-
+		
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
@@ -343,13 +343,36 @@ def group_old(o1,*objs):
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
 
+# helper to detect our own grouping concept
+def is_group(o):
+	# just a few sanity checkt: is just a bounding box and set to "BOUNDS" representation
+	return o.draw_type=='BOUNDS' and len(o.children) > 0 and len(o.data.vertices) == 8 and len(o.data.edges) == 12
 
-#TODO: recursive "toggle_hierarchy": from selectable and selected to not selectable except root/parent object.
+def obj_unhide_select(o):
+	o.hide_select=False; o.select=True;
+	
+def obj_hide_unselect(o):
+	o.hide_select=True; o.select=False;
+	
+# define a little helper function o_func(o) to apply to all objects	selected or in hierarchy.
+# e.g. blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)
+# no need for "bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')" and making subtree "selectable" first
+def apply2objects(objs, o_func, nested=True):
+	for o in objs:
+		if o.type == 'MESH':
+			#print ([o.name, is_group(o), len(o.data.vertices), len(o.data.edges)]);
+			if is_group(o): # recurse FIRST (e.g. some stuff like delete may require this order...)
+				apply2objects(o.children, o_func, nested);
+				o_func(o);
+			else:
+				o_func(o);
+	return True;
+	
+#Not needed due to the function above: recursive "toggle_hierarchy": from selectable and selected to not selectable except root/parent object.
 ## could be recycled in Duplicate/delete actions... Delete with definite removal of intermediate objects
-# Building blocks:
 # bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
 
-	
+
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
@@ -439,9 +462,43 @@ def ungroup(root=None):
 	bpy.data.meshes.remove(mesh)		
 	return objs[0]
 
-	
-#active_material
+# Tinkercad like: Toggle status of "hole" for a given object.
+# subsequent "group" will treat holes differently: difference() instead of union()-like
+def hole(obj):
+	print("blenderscad.core.hole(): not yet implemented")			
+	return obj;
 
+# clone all object (hierarchies) provided by objs and return ref to clones
+def	clone(objs):
+	blenderscad.core.apply2objects( objs , obj_unhide_select, True);
+	#bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={}})
+	bpy.ops.object.duplicate(linked=False,mode='TRANSLATION');
+	new_objs = bpy.context.selected_objects  # after cloning, these are active...
+	blenderscad.core.apply2objects( new_objs , obj_hide_unselect, True);	
+	blenderscad.core.apply2objects( objs , obj_hide_unselect, True);
+	# fix top level objects -> make old selectable again, make new selectable and active..
+	for o in objs:
+		o.hide_select=False; o.select=False;
+	for o in new_objs:
+		o.hide_select=False; o.select=True;		
+	return new_objs;
+
+	
+# destruct(objs): DELETE all object (hierarchies) provided by objs and return ref to clones
+def	destruct(objs):
+	######################################
+	def destruct_obj(o):
+		if o.type == 'MESH':
+			mesh = o.data
+			bpy.context.scene.objects.unlink(o)	
+			bpy.data.objects.remove(o)
+			bpy.data.meshes.remove(mesh)
+		else:		
+			bpy.context.scene.objects.unlink(o)
+			bpy.data.objects.remove(o)
+	######################################		
+	blenderscad.core.apply2objects( objs , destruct_obj, True);	
+	return True;	
 
 # saw a hint that remesh may fix some boolean ops probs..
 def remesh( o=None, apply=True):

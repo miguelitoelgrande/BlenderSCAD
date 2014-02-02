@@ -34,8 +34,8 @@ import os
 
 # uncomment the following two lines to the path where your "blenderscad" module folder will be
 # (other than Blender's default location for modules)
-#import sys
-#sys.path.append("O:/BlenderStuff") 
+import sys
+sys.path.append("O:/BlenderStuff") 
 
 
 #filepath ="O:/BlenderStuff/blenderscad/toolbar.py"
@@ -89,19 +89,6 @@ import blenderscad.impexp
 #blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
 
 ###############################
-class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
-	bl_idname = "view3d.blenderscad_color"
-	bl_label = "color"
-	bl_description = "Shortcut to init material to object color"
-	
-	def execute(self, context):
-		if blenderscad.mat is None:
-			blenderscad.main()		
-		o = context.object
-#	  if blenderscad.mat.name not in o.data.materials.keys():
-#		  o.data.materials.append(blenderscad.mat)
-		blenderscad.core.color(blenderscad.math.rands(0,1,3),o)
-		return {'FINISHED'}
 
 #	Left Mouse Multiselect - For tablet devices :-)
 class VIEW3D_OT_blenderscad_multiselect(bpy.types.Operator):
@@ -126,7 +113,64 @@ class VIEW3D_OT_blenderscad_multiselect(bpy.types.Operator):
 					#dict(item.properties)
 					#item.active=False
 		return {'FINISHED'}					
-				
+
+class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
+	bl_idname = "view3d.blenderscad_color"
+	bl_label = "color"
+	bl_description = "Shortcut to init material to object color"
+	
+	def execute(self, context):
+		if blenderscad.mat is None:
+			blenderscad.main()		
+		#o = context.object		
+#	  if blenderscad.mat.name not in o.data.materials.keys():
+#		  o.data.materials.append(blenderscad.mat)
+		#blenderscad.core.color(blenderscad.math.rands(0,1,3),o)
+		global rndcol
+		rndcol=blenderscad.math.rands(0,1,3)
+		#######################
+		def colorize_func(o):
+			global rndcol
+			blenderscad.core.color(rndcol,o)
+			return o;
+		#######################		
+		blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)				
+		return {'FINISHED'}
+
+		
+class VIEW3D_OT_blenderscad_hole(bpy.types.Operator):
+	bl_label = "hole"; bl_idname = "view3d.blenderscad_hole"
+	bl_description = "Declare selected objects/groupings as being 'holes' in future groupings"  
+	def execute(self, context):		
+		for o in bpy.context.selected_objects:
+			blenderscad.core.hole(o);
+		return {'FINISHED'}  		
+
+			
+class VIEW3D_OT_blenderscad_group(bpy.types.Operator):
+	bl_label = "group"; bl_idname = "view3d.blenderscad_group"
+	bl_description = "Shortcut to group objects" 
+	def execute(self, context):
+		# we need the active object of selection separately as "main" object"
+		o1=bpy.context.active_object
+		o1.select=False
+		sel=bpy.context.selected_objects
+		# TODO: rework group with "empty" object as bounding box/parent -> resolves cyclic dependencies with bool modifiers...
+		blenderscad.core.group(o1,*sel)
+		return {'FINISHED'}  
+	
+class VIEW3D_OT_blenderscad_ungroup(bpy.types.Operator):
+	bl_label = "ungroup"; bl_idname = "view3d.blenderscad_ungroup"
+	bl_description = "Shortcut to ungroup objects"  
+	def execute(self, context):
+		# we need the active object of selection separately as "main" object"
+		o1=bpy.context.active_object
+		o1.select=False
+		sel=bpy.context.selected_objects		
+		blenderscad.core.ungroup(o1)
+		return {'FINISHED'}  		
+
+		
 class VIEW3D_OT_blenderscad_remesh(bpy.types.Operator):
 	bl_idname = "view3d.blenderscad_remesh"
 	bl_label = "remesh"
@@ -235,56 +279,48 @@ class VIEW3D_OT_blenderscad_union(bpy.types.Operator):
 		#res.select=True; # to be on the safe side...
 		return {'FINISHED'}  
 
-class VIEW3D_OT_blenderscad_group(bpy.types.Operator):
-	bl_label = "group"; bl_idname = "view3d.blenderscad_group"
-	bl_description = "Shortcut to group objects" 
-	def execute(self, context):
-		# we need the active object of selection separately as "main" object"
-		o1=bpy.context.active_object
-		o1.select=False
-		sel=bpy.context.selected_objects
-		# TODO: rework group with "empty" object as bounding box/parent -> resolves cyclic dependencies with bool modifiers...
-		blenderscad.core.group(o1,*sel)
-		return {'FINISHED'}  
-	
-class VIEW3D_OT_blenderscad_ungroup(bpy.types.Operator):
-	bl_label = "ungroup"; bl_idname = "view3d.blenderscad_ungroup"
-	bl_description = "Shortcut to ungroup objects"  
-	def execute(self, context):
-		# we need the active object of selection separately as "main" object"
-		o1=bpy.context.active_object
-		o1.select=False
-		sel=bpy.context.selected_objects		
-		blenderscad.core.ungroup(o1)
-		return {'FINISHED'}  
-
-class VIEW3D_OT_blenderscad_copy(bpy.types.Operator):
-	bl_label = "copy"; bl_idname = "view3d.blenderscad_copy"
-	bl_description = "Copy/Paste = CTRL+C , CTRL+V, maybe more touch device friendly :-)"  
-	def execute(self, context):
-		bpy.ops.view3d.copybuffer() # CTRL+C
-		bpy.ops.view3d.pastebuffer() # CTRL+V
-		return {'FINISHED'}  
 
 
+class VIEW3D_OT_blenderscad_clone(bpy.types.Operator):
+	bl_label = "clone"; bl_idname = "view3d.blenderscad_clone"
+	bl_description = "Clone all selected objects incl. groups/hierarchies"  
+	def execute(self, context):
+		#bpy.ops.view3d.copybuffer() # CTRL+C
+		#bpy.ops.view3d.pastebuffer() # CTRL+V
+		blenderscad.core.clone(bpy.context.selected_objects);
+		return {'FINISHED'}  
+
+class VIEW3D_OT_blenderscad_destruct(bpy.types.Operator):
+	bl_label = "destruct"; bl_idname = "view3d.blenderscad_destruct"
+	bl_description = "DELETE all selected objects incl. groups/hierarchies"  
+	def execute(self, context):
+		blenderscad.core.destruct(bpy.context.selected_objects);
+		return {'FINISHED'}  
+
+		
 
 ########################################################
-bpy.utils.register_class(VIEW3D_OT_blenderscad_color)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_multiselect)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_remesh)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_subdivide)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_beautify)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_color)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_debug)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_dissolve)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_round)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_remesh)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_decimate)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_beautify)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_subdivide)
+
+bpy.utils.register_class(VIEW3D_OT_blenderscad_group)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_ungroup)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_hole)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_hull)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_union)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_difference)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_intersection)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_group)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_ungroup)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_debug)
-bpy.utils.register_class(VIEW3D_OT_blenderscad_copy)
+
+bpy.utils.register_class(VIEW3D_OT_blenderscad_clone)
+bpy.utils.register_class(VIEW3D_OT_blenderscad_destruct)
+
 ########################################################
 #menu_func = (lambda self, context: self.layout.operator('OBJECT_OT_monkify'))
 #bpy.types.VIEW3D_PT_tools_objectmode.prepend(menu_func)
@@ -322,6 +358,8 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 		col.operator("ed.undo", text="Undo", icon='LOOP_BACK')		
 		col2.operator("ed.redo", text="Redo", icon='LOOP_FORWARDS')		
 		
+		col.operator("view3d.blenderscad_multiselect", text="MultiSelect", icon='STICKY_UVS_LOC' )
+		#col2.prop(scn, 'MyInt', icon='STICKY_UVS_LOC', toggle=True) # TODO: Toggle-Button would be nicer...
 		col.operator("view3d.blenderscad_color", text="Colorize", icon='COLOR')		
 		col.operator("view3d.blenderscad_debug", text="ShowEdges", icon='WIRE')  # WIRE
 		col.operator("view3d.blenderscad_dissolve", text="CleanUp", icon='SAVE_PREFS') # MOD_BOOLEAN
@@ -331,21 +369,19 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 		col.operator("view3d.blenderscad_beautify", text="Beautify", icon='SCENE_DATA')
 		col.operator("view3d.blenderscad_subdivide", text="Subdivide", icon='OUTLINER_OB_LATTICE')		
 			
-		col2.operator("view3d.blenderscad_multiselect", text="MultiSelect", icon='STICKY_UVS_LOC' )
-		#col2.prop(scn, 'MyInt', icon='STICKY_UVS_LOC', toggle=True)
-		col2.operator("view3d.blenderscad_copy", text="Duplicate", icon='GHOST')		
+		col2.operator("view3d.blenderscad_hole", text='"Hole"', icon='UGLYPACKAGE')	# TODO: better icon for "hole"
+		col2.operator("view3d.blenderscad_group", text="Group", icon='GROUP')
+		col2.operator("view3d.blenderscad_ungroup", text="UnGroup", icon='STICKY_UVS_DISABLE')
+		
 		col2.operator("view3d.blenderscad_hull", text="Hull", icon='MOD_SUBSURF')
 		col2.operator("view3d.blenderscad_union", text="Union", icon='ROTATECOLLECTION')
 		col2.operator("view3d.blenderscad_difference", text="Difference", icon='ROTACTIVE')
 		col2.operator("view3d.blenderscad_intersection", text="Intersect", icon='ROTATECENTER')
-
-		col2.operator("view3d.blenderscad_group", text="Group", icon='GROUP')
-		col2.operator("view3d.blenderscad_ungroup", text="UnGroup", icon='STICKY_UVS_DISABLE')
-
-	
 		
-		#join, group, Difference , Union, 
+		col2.operator("view3d.blenderscad_clone", text="Clone", icon='GHOST')		
+		col2.operator("view3d.blenderscad_destruct", text="Destruct", icon='RADIO')	
 
+		#join, group, Difference , Union, 
 		#col.operator("wm.console_toggle()", text="Console (Win)", icon='CONSOLE')
 # Icons and ideas for further functions:
 #RETOPO , CONSOLE, WIRE,  MOD_BEVEL  SCENE_DATA
