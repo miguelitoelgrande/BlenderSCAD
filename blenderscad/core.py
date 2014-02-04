@@ -130,19 +130,40 @@ def str(*args):
 #number=4;
 #echo (str("This is ",number,3," and that's it."));
 
+########################
+# Detect our BlenderSCAD group concept - we do not deal with hierarchies in general ;-)
+def is_bsgroup(o):
+	# just a few sanity check: is just a bounding box and set to "BOUNDS" representation
+	# plus custom property
+	return o.get('blenderscad_group', False) and o.draw_type=='BOUNDS' and len(o.children) > 0 and len(o.data.vertices) == 8 and len(o.data.edges) == 12
 
+# traverse to top level object (root) of Blenderscad group (bsgroup) for any object in its hierarchy.
+def get_root(o):
+	root = o
+	while root.parent is not None: # traverse to the top.
+		root = root.parent
+	#print (("root=",root,"o=",o));
+	if is_bsgroup(root):
+		return root;
+	else:
+		return o;
+	
 # OpenSCAD: color()
 # applies to given object o or the current context object the given color
 # color is either a float vector with 3 or 4 components (rgb , rgba) or a color name
 # from blenderscad.colors - no need to quote the string, as all colors defined as variables.
-def color( rgba=(1.0,1.0,1.0, 0), o=None): 
+def color( rgba=(1.0,1.0,1.0, 0), o=None):
 	if type(rgba)== type('SomeString'):
 		rgba = getattr(blenderscad.colors, rgba)		
-		#echo("newCol:" , rgba)
+		#echo("newCol:" , rgba)		
 	if o is None:
 		o = bpy.context.object
+	if is_bsgroup(o):
+		for c in o.children: 
+			color( rgba, c);
+		return o; # -> NO colorization to bsgroup object..
 	if bpy.context.active_object.mode is not 'OBJECT': 
-		bpy.ops.object.mode_set(mode = 'OBJECT')		
+		bpy.ops.object.mode_set(mode = 'OBJECT')
 	# ensure we have already assigned a material.
 	if o.draw_type == 'WIRE' or o.draw_type == 'BOUNDS': # 'WIRE' seems to cause probe /w material...
 		return o
@@ -323,7 +344,47 @@ def resize( newsize=(1.0,1.0,1.0), o=None):
 	
 #resize([15,5,20], cube(size=5)	)
 
-		
+# join as a (better?) alternative to union()
+# apply is dummy to mock full union syntax
+def join(o1,*objs, apply=True):
+	bpy.ops.object.select_all(action = 'DESELECT')
+	o1.select = True
+	#cleanup_object(o1)
+	o1.name = 'J('+o1.name
+	bpy.context.scene.objects.active = o1
+	for obj in objs:
+		if obj is not None:			
+			#cleanup_object(obj)		
+			o1.name = o1.name +','+obj.name
+			obj.select = True
+			#bpy.context.scene.objects.active = o1
+			bpy.ops.object.join()
+			cleanup_object(o1)		
+	o1.name = o1.name + ')'
+	o1.data.name = o1.name
+	#objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
+    # 
+	cleanup_object(o1)
+	return o1
+
+#join(cube(10), cylinder(r=5,h=15), cylinder(r=2.5,h=20))
+#cylinder(r=5,h=15)
+
+
+# opposite of join(): splitting an object at mesh level if it has loose parts
+# returns reference to split objects
+def split(o=None):
+	if o is None:	
+		o = bpy.context.scene.objects.active
+	else:
+		bpy.context.scene.objects.active = o
+	if bpy.context.active_object.mode is not 'EDIT': 
+		bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.separate(type='LOOSE')
+	bpy.ops.object.mode_set(mode = 'OBJECT')
+	return bpy.context.selected_objects;
+
+
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
 # therefore different colors. However, need to rework subsequent modifiers?
 # TODO: Should use obj.constraint("Copy Location")...  , "Copy Rotation", "Copy Scale" instead. Prob: Rotation around axis of target obj...
@@ -343,34 +404,6 @@ def group_old(o1,*objs):
 	#bpy.ops.object.parent_clear(type='CLEAR_INVERSE')
 	return res
 
-# helper to detect our own grouping concept
-def is_group(o):
-	# just a few sanity checkt: is just a bounding box and set to "BOUNDS" representation
-	return o.draw_type=='BOUNDS' and len(o.children) > 0 and len(o.data.vertices) == 8 and len(o.data.edges) == 12
-
-def obj_unhide_select(o):
-	o.hide_select=False; o.select=True;
-	
-def obj_hide_unselect(o):
-	o.hide_select=True; o.select=False;
-	
-# define a little helper function o_func(o) to apply to all objects	selected or in hierarchy.
-# e.g. blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)
-# no need for "bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')" and making subtree "selectable" first
-def apply2objects(objs, o_func, nested=True):
-	for o in objs:
-		if o.type == 'MESH':
-			#print ([o.name, is_group(o), len(o.data.vertices), len(o.data.edges)]);
-			if is_group(o): # recurse FIRST (e.g. some stuff like delete may require this order...)
-				apply2objects(o.children, o_func, nested);
-				o_func(o);
-			else:
-				o_func(o);
-	return True;
-	
-#Not needed due to the function above: recursive "toggle_hierarchy": from selectable and selected to not selectable except root/parent object.
-## could be recycled in Duplicate/delete actions... Delete with definite removal of intermediate objects
-# bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
 
 
 # NO OpenSCAD thing, but nice alternative to union(). It preserves the objects and
@@ -386,9 +419,10 @@ def group(o1,*objs):
 	#bb.data.materials.append(blenderscad.matTrans)
 	#bb.draw_type='TEXTURED' # TODO: set 3D View to Textured view..
 	bb.draw_type='BOUNDS' # same effect and probably faster: bounds only...
+	bb['blenderscad_group'] = True
 	bb.show_name=True
 	bb.hide_render=True
-	bb.name="group"
+	bb.name="bsgroup"
 	bb.data.name="bbox"
 	bpy.ops.object.select_all(action='DESELECT')	
 	o1.select = True
@@ -428,8 +462,9 @@ def group(o1,*objs):
 	for obj in objs:
 		obj.select=True
 		bpy.ops.object.parent_set(type='OBJECT',keep_transform=True)
-		obj.hide_select = True
+#		obj.hide_select = True
 		obj.select=False
+		if is_bsgroup(obj): obj.hide = True; # nested groups to be hidden. only to pertain hierarchy.
 		#Keep Hierarchy selectable, but avoid transforming children independent of parent.
 		obj.lock_location = (True,True,True)
 		obj.lock_rotation = (True,True,True)
@@ -437,17 +472,22 @@ def group(o1,*objs):
 	bb.select=True		
 	return bb
 
+
 # reverse effect of ungroup
 def ungroup(root=None):	
 	if bpy.context.active_object.mode is not 'OBJECT': 
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 	if root is None:	
 		root = bpy.context.scene.objects.active
-	objs= root.children
-	# TODO: if no children, try to split on "mesh"-level:  bpy.ops.mesh.separate(type='LOOSE')
+	if len(root.children) == 0: # Extra: if no children, try to split on "mesh"-level:  
+		print("nothing to ungroup, trying to split up at mesh-level");
+		return split(root);
+	objs = root.children	
+	bpy.ops.object.select_all(action='DESELECT')	
 	for obj in objs:
 		#print((root.name,":",obj.name))
 		obj.hide_select = False
+		obj.hide = False # important! cannot ungroup invisible objects -> context error
 		obj.lock_location = (False,False,False)
 		obj.lock_rotation = (False,False,False)
 		obj.lock_scale	 = (False,False,False)
@@ -468,38 +508,113 @@ def hole(obj):
 	print("blenderscad.core.hole(): not yet implemented")			
 	return obj;
 
+
+
+def obj_unhide_select(o):
+	o.hide_select=False; o.select=True;
+	
+def obj_hide_unselect(o):
+	o.hide_select=True; o.select=False;
+
+def obj_unselect(o):
+	o.select=False;
+
+	
+def bsgroup_protect(o):
+	if o==get_root(o):
+		return;
+	if is_bsgroup(o):
+		o.hide=True; o.select=False;
+	else:
+		o.hide=False; o.select=False;
+
+def bsgroup_unprotect(o):
+	o.hide=False; o.select=True;	
+	
+	
+# define a little helper function o_func(o) to apply to all objects	selected or in hierarchy.
+# e.g. blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)
+# no need for "bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')" and making subtree "selectable" first
+def apply2objects(objs, o_func, nested=True):
+	for o in objs:
+		if o.type == 'MESH':
+			#print ([o_func.__name__, o.name, is_group(o), len(o.data.vertices), len(o.data.edges)]);
+			if is_bsgroup(o): # recurse FIRST (e.g. some stuff like delete may require this order...)
+				apply2objects(o.children, o_func, nested);
+				#print ([o_func.__name__, o.name, is_group(o), len(o.data.vertices), len(o.data.edges)]);
+				o_func(o);
+			else:
+				#print ([o_func.__name__, o.name, is_group(o), len(o.data.vertices), len(o.data.edges)]);
+				o_func(o);
+	return True;
+	
+#Not needed due to the function above: recursive "toggle_hierarchy": from selectable and selected to not selectable except root/parent object.
+## could be recycled in Duplicate/delete actions... Delete with definite removal of intermediate objects
+# bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
+	
+	
 # clone all object (hierarchies) provided by objs and return ref to clones
-def	clone(objs):
-	blenderscad.core.apply2objects( objs , obj_unhide_select, True);
+def	cloneOLD(objs):
+	blenderscad.core.apply2objects( objs , obj_select, True);
 	#bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={}})
 	bpy.ops.object.duplicate(linked=False,mode='TRANSLATION');
-	new_objs = bpy.context.selected_objects  # after cloning, these are active...
-	blenderscad.core.apply2objects( new_objs , obj_hide_unselect, True);	
-	blenderscad.core.apply2objects( objs , obj_hide_unselect, True);
+	new_objs = bpy.context.selected_objects  # after cloning, all new objects are selected...
+	new_top_objs=[]; # distill all objects without parent in same set...
+	for n in new_objs:
+		if n.parent not in new_objs : new_top_objs.append(n);
+	#blenderscad.core.apply2objects( new_top_objs , obj_hide_unselect, True);	
+	blenderscad.core.apply2objects( objs , obj_unselect, True);
 	# fix top level objects -> make old selectable again, make new selectable and active..
 	for o in objs:
 		o.hide_select=False; o.select=False;
-	for o in new_objs:
+	for o in new_top_objs:
 		o.hide_select=False; o.select=True;		
-	return new_objs;
+	return new_top_objs;
 
+# clone all object (hierarchies) provided by objs and return ref to clones
+def	clone(objs):
+	bpy.ops.object.select_all(action='DESELECT')
+	blenderscad.core.apply2objects( objs , bsgroup_unprotect, True);
+#	for o in objs: # just to be on the safe side, "objs" not necessary all selected...
+#		o.select=True
+#	bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
+#
+	#bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={}})	
+	bpy.ops.object.duplicate(linked=False,mode='TRANSLATION');
+	new_objs = bpy.context.selected_objects  # after cloning, all new objects are selected...
+	blenderscad.core.apply2objects( objs , bsgroup_protect, True);
+	blenderscad.core.apply2objects( new_objs , bsgroup_protect, True);
+	new_top_objs=[]; # distill all objects without parent in same set...
+	for n in new_objs:
+		if n.parent not in new_objs : new_top_objs.append(n);
+	#blenderscad.core.apply2objects( new_top_objs , obj_hide_unselect, True);	
+	#blenderscad.core.apply2objects( objs , obj_unselect, True);
+	# fix top level objects -> make old selectable again, make new selectable and active..
+	#for o in objs:
+	#	o.select=False;
+	for o in new_top_objs:
+		o.select=True;		
+	return new_top_objs;	
 	
 # destruct(objs): DELETE all object (hierarchies) provided by objs and return ref to clones
-def	destruct(objs):
+def	destruct(o):
+	if is_bsgroup(o):
+		for c in o.children: 
+			destruct(c);
 	######################################
-	def destruct_obj(o):
-		if o.type == 'MESH':
-			mesh = o.data
-			bpy.context.scene.objects.unlink(o)	
-			bpy.data.objects.remove(o)
-			bpy.data.meshes.remove(mesh)
-		else:		
-			bpy.context.scene.objects.unlink(o)
-			bpy.data.objects.remove(o)
+	if o.type == 'MESH':
+		mesh = o.data
+		bpy.context.scene.objects.unlink(o)	
+		bpy.data.objects.remove(o)
+		bpy.data.meshes.remove(mesh)
+	else:		
+		bpy.context.scene.objects.unlink(o)
+		bpy.data.objects.remove(o)
 	######################################		
-	blenderscad.core.apply2objects( objs , destruct_obj, True);	
 	return True;	
 
+	
+	
 # saw a hint that remesh may fix some boolean ops probs..
 def remesh( o=None, apply=True):
 	if o is None:	
@@ -651,31 +766,7 @@ def cleanup_object(o=None,removeDoubles=False,quads=False,subdivide=False, beaut
 	bpy.context.scene.update()	
 	return o	
 
-# join as a (better?) alternative to union()
-# apply is dummy to mock full union syntax
-def join(o1,*objs, apply=True):
-	bpy.ops.object.select_all(action = 'DESELECT')
-	o1.select = True
-	#cleanup_object(o1)
-	o1.name = 'J('+o1.name
-	bpy.context.scene.objects.active = o1
-	for obj in objs:
-		if obj is not None:			
-			#cleanup_object(obj)		
-			o1.name = o1.name +','+obj.name
-			obj.select = True
-			#bpy.context.scene.objects.active = o1
-			bpy.ops.object.join()
-			cleanup_object(o1)		
-	o1.name = o1.name + ')'
-	o1.data.name = o1.name
-	#objA.data.name = boolOp[0]+'('+objA.data.name+','+objB.data.name+')'
-    # 
-	cleanup_object(o1)
-	return o1
 
-#join(cube(10), cylinder(r=5,h=15), cylinder(r=2.5,h=20))
-#cylinder(r=5,h=15)
 	
 # booleanOp is used by union(), difference() and intersection()
 # TODO: apply=False will require a fix to allow for later scaling, etc.

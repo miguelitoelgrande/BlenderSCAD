@@ -89,6 +89,55 @@ import blenderscad.impexp
 #blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
 
 ###############################
+class VIEW3D_OT_blenderscad_select_bsgroup(bpy.types.Operator):
+	bl_idname = "view3d.blenderscad_select_bsgroup"
+	bl_label = "select_bsgroup"
+	bl_description = "Select a whole (BlenderSCAD) grouping when any child is selected (i.e. redirect to root)"
+	
+
+	def invoke(self, context, event):
+		#context.window_manager.modal_handler_add(self)
+		location=( event.mouse_region_x , event.mouse_region_y );
+		#print (location);
+		oldsel=bpy.context.selected_objects;
+		#print(oldsel);
+		bpy.ops.view3d.select(location=location, toggle=False, extend=False, deselect=False,  center=False, enumerate=False, object=False )
+		change=bpy.context.selected_objects;
+		#print(change);
+		for o in oldsel: # restore old selection in addition
+			o.select = True		
+		for o in change:
+			root=blenderscad.core.get_root(o);		
+			if root != o: # real root											
+				#print (("root=",root,"o=",o));
+				o.select=False
+				root.select = (root not in oldsel); # toggle selection 
+			else:
+				o.select = (o not in oldsel); # toggle selection
+			context.scene.objects.active = bb = root
+		return {'RUNNING_MODAL'}	
+		
+# iteratively traverse tree.. not required anymore.				
+#			nlist=[]
+#			nlist.append(root)
+#			while len(nlist)>0:
+#				node=nlist.pop()
+#				node.select=selState
+#				#print(node.name);
+#				for c in node.children:
+#					nlist.insert(0,c);
+#			#if o.parent is not None: o.parent.select=True
+
+#	def execute(self, context):
+#		cursorLoc = bpy.context.scene.cursor_location
+#		bpy.ops.view3d.select(extend=False, deselect=False, toggle=False, center=False, enumerate=False, object=False, location=(0, 0))
+#		for o in bpy.context.selected_objects:
+#			if o.parent is not None: o.parent.select=True
+#		#######################		
+#		#blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)				
+#		return {'FINISHED'}
+
+###################################
 
 #	Left Mouse Multiselect - For tablet devices :-)
 class VIEW3D_OT_blenderscad_multiselect(bpy.types.Operator):
@@ -113,8 +162,10 @@ class VIEW3D_OT_blenderscad_multiselect(bpy.types.Operator):
 					#dict(item.properties)
 					#item.active=False
 		return {'FINISHED'}					
+	
+			
 
-class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
+class VIEW3D_OT_blenderscad_colorTEST(bpy.types.Operator):
 	bl_idname = "view3d.blenderscad_color"
 	bl_label = "color"
 	bl_description = "Shortcut to init material to object color"
@@ -137,12 +188,31 @@ class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
 		blenderscad.core.apply2objects(bpy.context.selected_objects, colorize_func, True)				
 		return {'FINISHED'}
 
+class VIEW3D_OT_blenderscad_color(bpy.types.Operator):
+	bl_idname = "view3d.blenderscad_color"
+	bl_label = "color"
+	bl_description = "Shortcut to init material to object color"
+	
+	def execute(self, context):
+		if blenderscad.mat is None:
+			blenderscad.main()		
+		#o = context.object		
+#	  if blenderscad.mat.name not in o.data.materials.keys():
+#		  o.data.materials.append(blenderscad.mat)
+#
+		# new paradigm: handle selections in operator, groupings in core functions
+		# as they should behave caller side as "atomic" objects. The specific knows how to handle it.
+		rgba=blenderscad.math.rands(0,1,3);
+		for o in context.selected_objects:
+			blenderscad.core.color(rgba,o);
+		return {'FINISHED'}
+
 		
 class VIEW3D_OT_blenderscad_hole(bpy.types.Operator):
 	bl_label = "hole"; bl_idname = "view3d.blenderscad_hole"
 	bl_description = "Declare selected objects/groupings as being 'holes' in future groupings"  
 	def execute(self, context):		
-		for o in bpy.context.selected_objects:
+		for o in context.selected_objects:
 			blenderscad.core.hole(o);
 		return {'FINISHED'}  		
 
@@ -165,8 +235,8 @@ class VIEW3D_OT_blenderscad_ungroup(bpy.types.Operator):
 	def execute(self, context):
 		# we need the active object of selection separately as "main" object"
 		o1=bpy.context.active_object
-		o1.select=False
-		sel=bpy.context.selected_objects		
+		#o1.select=False
+		#sel=bpy.context.selected_objects
 		blenderscad.core.ungroup(o1)
 		return {'FINISHED'}  		
 
@@ -294,7 +364,8 @@ class VIEW3D_OT_blenderscad_destruct(bpy.types.Operator):
 	bl_label = "destruct"; bl_idname = "view3d.blenderscad_destruct"
 	bl_description = "DELETE all selected objects incl. groups/hierarchies"  
 	def execute(self, context):
-		blenderscad.core.destruct(bpy.context.selected_objects);
+		for o in context.selected_objects:
+			blenderscad.core.destruct(o);
 		return {'FINISHED'}  
 
 		
@@ -320,6 +391,9 @@ bpy.utils.register_class(VIEW3D_OT_blenderscad_intersection)
 
 bpy.utils.register_class(VIEW3D_OT_blenderscad_clone)
 bpy.utils.register_class(VIEW3D_OT_blenderscad_destruct)
+
+bpy.utils.register_class(VIEW3D_OT_blenderscad_select_bsgroup)
+
 
 ########################################################
 #menu_func = (lambda self, context: self.layout.operator('OBJECT_OT_monkify'))
@@ -407,14 +481,6 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 			else:
 				row.label(text="it is a "+str(type)+".")
 
-
-def register():
-	import blenderscad
-	bpy.utils.register_class(VIEW3D_PT_blenderscad_qat)
-	#bpy.utils.unregister_class(BlenderSCADPanel)
-
-def unregister():
-	bpy.utils.unregister_class(VIEW3D_PT_blenderscad_qat)
 
 
 # # Funktioniert:
@@ -537,14 +603,81 @@ class VIEW3D_MT_blenderscad(bpy.types.Menu):
 		layout.operator("view3d.blenderscad_ungroup", text="UnGroup", icon='STICKY_UVS_DISABLE')
 #################
 
+def default_keymap(enable=False):
+	keyMap = bpy.context.window_manager.keyconfigs.active.keymaps['3D View'] # does not activate changes?
+	#keyMap = bpy.context.window_manager.keyconfigs.user.keymaps['3D View']
+	for item in keyMap.keymap_items:
+		#if item.id==99:
+		#	print( [item.active, item.id, item.name, item.idname, item.map_type, item.type, item.propvalue] );
+		#	# [True, 99, 'Activate/Select', 'view3d.select', 'MOUSE', 'SELECTMOUSE', 'NONE']
+		#	print( [item.any, item.shift, item.ctrl, item.alt, item.oskey ] );
+		#	# [False, False, False, False, False]
+		#	dict(item.properties)
+		#	# {'toggle': 0, 'deselect': 0, 'extend': 0, 'center': 0, 'object': 0, 'enumerate': 0}			
+		if [item.name, item.idname, item.map_type, item.type, item.propvalue] == [ 'Activate/Select', 'view3d.select', 'MOUSE', 'SELECTMOUSE', 'NONE'] and [item.any, item.shift, item.ctrl, item.alt, item.oskey ] ==  [False, False, False, False, False]:
+			#print("BINGO!");
+			setattr(item.properties, 'toggle', False==getattr(item.properties,'toggle') )	
+			#dict(item.properties)
+			item.active=enable
+			return item;
 
-
-if __name__ == "__main__":
-	register()
+# store keymap item here to access after registration
+kmi=None
+orig_obj_menu=None		
+		
+def register():
+	import blenderscad
+	bpy.utils.register_class(VIEW3D_PT_blenderscad_qat)
+	#bpy.utils.unregister_class(BlenderSCADPanel)
+	#TODO:
+    #bpy.types.VIEW3D_MT_object.append(menu_func)
+	#
+	#disable default keymap for Mouse-Select in 3D view first...
+	default_keymap(enable=False);
+	# handle the keymap
+	global kmi;
+	km = bpy.context.window_manager.keyconfigs.active.keymaps['3D View']
+	kmi = km.keymap_items.new(VIEW3D_OT_blenderscad_select_bsgroup.bl_idname, 'SELECTMOUSE', 'PRESS', ctrl=False, shift=False)	
+	# TODO: define my own properties here
+	#kmi.properties.toggle = True 
+	#
+	# As a goodie, try to cleanup "Object"-Menu..
+	global orig_obj_menu;
+	orig_obj_menu = bpy.types.VIEW3D_MT_object.draw;
 	bpy.types.VIEW3D_MT_object.remove(  bpy.types.VIEW3D_MT_object.draw )
 	bpy.types.VIEW3D_MT_object.draw._draw_funcs.clear()	
 	#bpy.types.VIEW3D_MT_object.remove(  MyObjectMenu_draw )	
-	bpy.types.VIEW3D_MT_object.append(  MyObjectMenu_draw )	
+	bpy.types.VIEW3D_MT_object.append(  MyObjectMenu_draw )		
+
+def unregister():
+	bpy.utils.unregister_class(VIEW3D_PT_blenderscad_qat)
+	#TODO:
+	#bpy.types.VIEW3D_MT_object.remove(menu_func)
+	#
+	# handle the keymap
+	global kmi;
+	km = bpy.context.window_manager.keyconfigs.active.keymaps['3D View']	
+	km.keymap_items.remove(kmi)
+	#enable default keymap for Mouse-Select in 3D view first...
+	default_keymap(enable=True);
+	#
+	# restore original "Object"-Menu:
+	global orig_obj_menu;
+	bpy.types.VIEW3D_MT_object.remove(  MyObjectMenu_draw )	
+	bpy.types.VIEW3D_MT_object.append( orig_obj_menu )	
+
+	
+# for faster testing of enable/disable addon:
+#bpy.ops.wm.addon_enable(module="blenderscad_toolbar")
+#bpy.ops.wm.addon_disable(module="blenderscad_toolbar")
+	
+if __name__ == "__main__":
+	register()
+#	bpy.types.VIEW3D_MT_object.remove(  bpy.types.VIEW3D_MT_object.draw )
+#	bpy.types.VIEW3D_MT_object.draw._draw_funcs.clear()	
+#	#bpy.types.VIEW3D_MT_object.remove(  MyObjectMenu_draw )	
+#	bpy.types.VIEW3D_MT_object.append(  MyObjectMenu_draw )	
+# TODO: Own Blenderscad Menu?
 #	bpy.utils.register_class(VIEW3D_MT_blenderscad)
 #	bpy.types.VIEW3D_HT_header.remove(  VIEW3D_MT_blenderscad.draw )
 #	bpy.types.VIEW3D_HT_header.prepend( VIEW3D_MT_blenderscad.draw )
