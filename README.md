@@ -107,18 +107,11 @@ SAVE all open work first, better go to a clean document.
 Open the demo script <i>blenderscad_demo.py</i> in Blender's internal text editor and uncomment the demo section you want to try out. Simply use "run script". This is the easiest way. 
 
 You can also save your script as part of a .blend file.
-Again, caution, the upper part of the script will first wipe all objects of the open scene.
-
-There are two ways to execute the script in Blender:
-
-<h4>via Blender's built in text editor</h4>
-
-This way, Blender is your OpenSCAD-like IDE. You can even have the code compile while typing
+Again, caution, there is a line in most of my demo scripts to wipe all objects of the open scene first for rapid testing. Congratulations, Blender is now your OpenSCAD-like IDE. You can even have the code compile while typing
 (Check "Live Edit" in the editor)
-Load <i>"BlenderSCAD.py"</i> into your text editor.
 
-<h4>via Python Console</h4>
-
+<h4>Alternatively, run via Python Console</h4>
+This option is preferred if you use an external editor for the code.
 <pre>
 #Optionally, first clear command history in Python Console:
 bpy.ops.console.clear(history=True)
@@ -126,17 +119,10 @@ filename = "<your path>/BlenderSCAD.py
 exec(compile(open(filename).read(), filename, 'exec'))
 </pre>
 
-The second option is preferred if you use an external editor for the code.
+In general, I recommend to start Blender from a command line (Windows or Linux). This way you see all error messages and warnings.
 
-
-
-
-
-
-
-Blender files usually grow with all unlinked objects. It will garbage clean whenever you save and reopen the document.
-In order to make the "Live Edit" option work reasonable, I explicitly force the deletion of intermediate objects (e.g. before union).
-Therefore, the files should stay cleaner than while editing a blender file in the usual way.
+<h4>A few hints<h4>
+Blender files usually grow with all unlinked objects. It will garbage clean whenever you save and reopen the document. In order to make the "Live Edit" option work reasonable, I explicitly force the deletion (unlink) of intermediate objects and meshes (e.g. before union). Therefore, the files should stay cleaner than while editing a blender file in the usual way.
 <br/>
 A last word of "warning": Pay attention to where your source file is saved.
 <i>ALT+S</i> will save the file in the editor, <i>CTRL+S</i> will save the "materialized" version of that file inside blender. Changes may be lost if you resync.
@@ -201,20 +187,24 @@ A last word of "warning": Pay attention to where your source file is saved.
 <li>...
 </ul>
 
-<h2>Preview: BlenderSCAD Panel</h2>
+<h2>The BlenderSCAD Panel</h2>
+This is currently the most active area of my development - subject to change ;-)
 I wanted to have some interactivity to try some additional operators and tweaks easily.
 As this is a really simple to do in Blender, I've defined a panel.
-Here is a little preview:
+This is how the first version looked like:
 
 <img src="imgs/Panel.png">
 
-It mainly reuses some extra code I've written for the BlenderSCAD enhancements.
+It mainly reuses some code I've written for the BlenderSCAD enhancements.
 A very handy thing are the multi-object boolean operations:
 3 clicks to have a cube, a cylinder and a sphere on the screen, a couple of clicks to align them,
 selecting several objects (Shift+Right Mouse), then just hit one of the Boolean buttons.
 Behind the scenes, it will create the required modifiers and apply them. A great productivity gain, I would say.
 Give it a try. Almost as convenient as Tinkercad (Group and Hole and Undo/Ungroup) still to be done.
 The object cleanup (using limited dissolve) really cleans up most resulting geometry. 
+<br/>
+In general, most operations will be applied to the set of selected objects.<br/>
+Object selection differs from the default Blender setup. I've changed the assignment of the mouse selection in order to make tablet operations (without a keyboard) possible.<br/>
 
 Speaking of geometry: The user will not even realize when the code is switching from Object to Edit mode (something not always straight forward in Blender, especially when scripting via Python?). There is a Debug-Button which will toggle displaying all object edges even in object mode.
 Blender could/can be so easy!
