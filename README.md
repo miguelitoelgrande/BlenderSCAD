@@ -99,7 +99,7 @@ if you are using Windows (Otherwise, refer to the Blender documentation).
 Well, this exeeds the original scope of providing OpenSCAD like operations and is rather similar to
 working with TinkerCAD. If you want to give it a try, install the addon and activate it in the user preferences:
 <pre>
-%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\scripts\addons\blenderscad_toolbar.py
+[installpath]\blender-2.69\2.69\scripts\addons\blenderscad_toolbar.py
 </pre>
 
 <h4>Getting started</h4>
