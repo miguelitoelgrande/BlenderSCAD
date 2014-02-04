@@ -121,7 +121,7 @@ exec(compile(open(filename).read(), filename, 'exec'))
 
 In general, I recommend to start Blender from a command line (Windows or Linux). This way you see all error messages and warnings.
 
-<h4>A few hints<h4>
+<h4>A few hints</h4>
 Blender files usually grow with all unlinked objects. It will garbage clean whenever you save and reopen the document. In order to make the "Live Edit" option work reasonable, I explicitly force the deletion (unlink) of intermediate objects and meshes (e.g. before union). Therefore, the files should stay cleaner than while editing a blender file in the usual way.
 <br/>
 A last word of "warning": Pay attention to where your source file is saved.
