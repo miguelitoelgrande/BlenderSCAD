@@ -66,10 +66,47 @@ logodemo()
 
 <img src="imgs/Logo_BlenderSCAD.png">
 
-<h2>Instructions</h2>
-Have Blender 2.69 installed. SAVE all open work first, better go to a clean document.
-Run the BlenderSCAD file and uncomment the demo section you want to try out.
-For the moment, this is the easiest way. Can also be saved as part of a .blend file.
+<h2>Install Instructions</h2>
+(Update)
+BlenderSCAD currently relies on Blender 2.69 installed.
+I've developed it on Windows with Blender 64bit version, but also tested it on Ubuntu (well sideloaded on an Android tablet).
+
+Installing BlenderSCAD is fairly simple:
+Meanwhile, I've split the project into a python module <i>blenderscad</i>, default user prefs and startup files for the <i>config</i> folder and the BlenderSCAD panel to be placed in the <i>addons</i> folder.
+Just installing the module is fine, the other two parts can be considered optional.
+Furthermore, there is a demo script <i>blenderscad_demo.py</i> and some more demo files in the <i>tests</i> and
+<i>examples</i> folders.
+
+
+<h4>The blenderscad module</h4>
+First, place the blenderscad directory in Blender's module path:
+<pre>
+[installpath]\blender-2.69\2.69\scripts\modules\blenderscad
+</pre>
+As an alternative, you can also set a path in the console or the demo script to the folder containing the modules.
+<br/>
+
+<h4>UI Look and Feel</h4>
+You can use my <b>startup.blend</b> and <b>userpref.blend</b> files from the config subfolder optionally.
+These will provide my Blender Theme adjustments and screen area setup as shown in the screenshot above.
+Place the content of the "config" folder into the Blender's config folder:
+<pre>
+%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\config
+</pre>
+if you are using Windows (Otherwise, refer to the Blender documentation).
+
+<h4>BlenderSCAD panel</h4>
+Well, this exeeds the original scope of providing OpenSCAD like operations and is rather similar to
+working with TinkerCAD. If you want to give it a try, install the addon and activate it in the user preferences:
+<pre>
+%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\scripts\addons\blenderscad_toolbar.py
+</pre>
+
+<h4>Getting started</h4>
+SAVE all open work first, better go to a clean document.
+Open the demo script <i>blenderscad_demo.py</i> in Blender's internal text editor and uncomment the demo section you want to try out. Simply use "run script". This is the easiest way. 
+
+You can also save your script as part of a .blend file.
 Again, caution, the upper part of the script will first wipe all objects of the open scene.
 
 There are two ways to execute the script in Blender:
@@ -91,24 +128,10 @@ exec(compile(open(filename).read(), filename, 'exec'))
 
 The second option is preferred if you use an external editor for the code.
 
-<h4>Recent Update:</h4>
-As the BlenderSCAD.py script was meanwhile growing too much, I've split the project into a python module <i>blenderscad</i> 
-and a demo script <i>blenderscad_demo.py</i>.
-You can either set a path in the demo script to the folder containing the blenderscad directory or place it where Blender's module path:
-<pre>
-[installpath]\blender-2.69\2.69\scripts\modules\blenderscad
-</pre>
-<br/>
-The old BlenderSCAD.py file will remain in place, but won't be longer maintained. Might be handy for some tests (e.g. on mobile devices?)
 
-<h4>UI Look and Feel</h4>
-You can use my <b>startup.blend</b> and <b>userpref.blend</b> files from the config subfolder optionally.
-These will provide my Blender Theme adjustments and screen area setup as shown in the screenshot above.
-Place the content of the "config" folder into the Blender's config folder:
-<pre>
-%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\config
-</pre>
-if you are using Windows (Otherwise, refer to the Blender documentation).
+
+
+
 
 
 Blender files usually grow with all unlinked objects. It will garbage clean whenever you save and reopen the document.
