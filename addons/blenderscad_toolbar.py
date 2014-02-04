@@ -34,8 +34,8 @@ import os
 
 # uncomment the following two lines to the path where your "blenderscad" module folder will be
 # (other than Blender's default location for modules)
-import sys
-sys.path.append("O:/BlenderStuff") 
+#import sys
+#sys.path.append("O:/BlenderStuff") 
 
 
 #filepath ="O:/BlenderStuff/blenderscad/toolbar.py"
