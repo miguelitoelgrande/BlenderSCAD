@@ -171,9 +171,12 @@ A last word of "warning": Pay attention to where your source file is saved.
 
 <h3>Extras</h3>
 <ul>
-<li>join
-<li>group
+<li>join, split
+<li>group, ungroup
+<li>clone, destruct
+<li>
 <li>round_edges
+<li>dissolve
 <li>
 <li>+several (OpenSCAD) demos
 <li>...
