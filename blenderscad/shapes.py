@@ -4,7 +4,12 @@
 # by Michael Mlivoncic, 2013
 #
 
-from blenderscad import *
+
+import blenderscad
+
+
+blenderscad.initns(globals()) # to avoid prefixing all calls, we make "aliases" in current namespace
+
 
 #################################################################
 ## some additional library functions
@@ -32,7 +37,7 @@ def octagon(size, height):
 
 #octagon(size=10,height=25)
 
-def ellipsoid(w, h, center = false):
+def ellipsoid(w, h, center = False):
     scale([1, h/w, 1], sphere(r=w/2, center=center) )
 
 #ellipsoid(w=10,h=5, center=true)
@@ -52,7 +57,7 @@ def roundedBox(width, height, depth, radius):
 
 
 #" official" rcube module from thingiverse rounded primitives
-def rcube(Size=[20,20,20],b=0.5):
+def rcube(Size=[20,20,20],b=0.5,center=True):
     tmp = None
     for x in [-(Size[0]/2-b),(Size[0]/2-b)]:
        for y in [-(Size[1]/2-b),(Size[1]/2-b)]:
