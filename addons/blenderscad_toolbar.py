@@ -411,7 +411,9 @@ class VIEW3D_PT_blenderscad_qat(bpy.types.Panel):
 	bl_label = "BlenderSCAD Quick Panel"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'TOOLS'
-
+	## Own Tab for Blender 2.70
+	bl_category = "BlenderSCAD"
+	
 	def draw(self, context):
 		layout = self.layout
 
