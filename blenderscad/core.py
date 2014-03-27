@@ -135,6 +135,8 @@ def str(*args):
 def is_bsgroup(o):
 	# just a few sanity check: is just a bounding box and set to "BOUNDS" representation
 	# plus custom property
+	if o is None:
+		return False;
 	return o.get('blenderscad_group', False) and o.draw_type=='BOUNDS' and len(o.children) > 0 and len(o.data.vertices) == 8 and len(o.data.edges) == 12
 
 # traverse to top level object (root) of Blenderscad group (bsgroup) for any object in its hierarchy.
@@ -783,6 +785,10 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 #	cleanup_object(objB)
 	#remesh(o=objB)
 	#
+	if is_bsgroup(objA):
+		objA=objA.children[0]; # first object represents the group.
+	if is_bsgroup(objB):
+		objB=objB.children[0]; # first object represents the group.
 	boo = objA.modifiers.new('MyBool', 'BOOLEAN')
 	boo.object = objB
 	boo.operation = boolOp  #  { 'DIFFERENCE', 'INTERSECT' , 'UNION' }
@@ -798,8 +804,8 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 		bpy.data.meshes.remove(mesh)
 	else:
 		#objB.hide_select = True
-		#objB.hide = True
-		objB.draw_type='WIRE'
+		objB.hide = True
+		#objB.draw_type='WIRE'
 #	cleanup_object(objA, removeDoubles=True)
 	#echo("boolOpEND")
 	#bpy.context.scene.update()	
@@ -807,17 +813,23 @@ def booleanOp(objA, objB, boolOp='DIFFERENCE', apply=True):
 
 	
 def union(o1,*objs, apply=True):
-	res = o1	
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
-	tmp=res.name
+	res = o1
+	if apply==True:
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	if apply==False:
+		grp=group(o1,*objs);			
+	tmp=res.name	
 	for obj in objs:
 		if obj != None:
 			tmp=tmp+","+obj.name
 			#cleanup_object(obj, removeDoubles=True, subdivide=False)			
-			res = booleanOp(res,obj, boolOp='UNION', apply=apply)	
+			res = booleanOp(res,obj, boolOp='UNION', apply=apply)
+	if apply==False:
+		res=grp;
+	else:
+		res.data.name = 'u('+tmp+')'		
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	res.name = 'u('+tmp+')'
-	res.data.name = 'u('+tmp+')'
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
 	return res
 		
 # TODO: write some "debug" mode grouping instead of really diffing sub-tree
@@ -826,7 +838,10 @@ def union(o1,*objs, apply=True):
 
 def difference(o1,*objs, apply=True):
 	res = o1
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)	
+	if apply==True:
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)	
+	if apply==False:
+		grp=group(o1,*objs);		
 	tmp=res.name	
 	to = None
 	for obj in objs:
@@ -840,10 +855,13 @@ def difference(o1,*objs, apply=True):
 			else:
 				#to = join(to,obj)
 				to = booleanOp(obj,to, boolOp='UNION', apply=apply)
-	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)	
-	res.name = 'd('+tmp+')'
-	res.data.name = 'd('+tmp+')'
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, beautify=False, normalsRecalcOut=False)
+	res = booleanOp(res,to, boolOp='DIFFERENCE', apply=apply)
+	if apply==False:
+		res=grp;
+	else:
+		res.data.name = 'd('+tmp+')'
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, beautify=False, normalsRecalcOut=False)
+	res.name = 'd('+tmp+')'	
 	return res
 
 # experimental alternative: instead of pairwise boolean, first join all objs to be diffed...
@@ -871,16 +889,22 @@ def difference2(o1,*objs, apply=True):
 def intersection(o1,*objs, apply=True):
 ## Remark: cannot use union here!! need to intersect all...
 	res = o1
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	if apply==True:
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	if apply==False:
+		grp=group(o1,*objs);		
 	tmp=res.name
 	for obj in objs:
 		if obj != None:
 			tmp=tmp+","+obj.name
 			#cleanup_object(obj, removeDoubles=True, subdivide=False)
 			res = booleanOp(res,obj, boolOp='INTERSECT', apply=apply)
-	res.name = 'i('+tmp+')'
-	res.data.name = 'i('+tmp+')'
-	cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	if apply==False:
+		res=grp;
+	else:
+		res.data.name = 'i('+tmp+')'
+		cleanup_object(res,removeDoubles=False,quads=False,subdivide=False, normalsRecalcOut=False)
+	res.name = 'i('+tmp+')'	
 	return res
 	
 

@@ -34,7 +34,7 @@ import os
 
 # uncomment the following two lines to the path where your "blenderscad" module folder will be
 # (other than Blender's default location for modules)
-#import sys
+import sys
 #sys.path.append("O:/BlenderStuff") 
 
 
@@ -321,7 +321,9 @@ class VIEW3D_OT_blenderscad_difference(bpy.types.Operator):
 		o1=context.active_object
 		o1.select=False
 		sel=bpy.context.selected_objects
-		res=blenderscad.core.difference(o1,*sel,apply=True)
+		if len(sel)<1 or o1 is None:			
+			return  {'FINISHED'}		
+		res=blenderscad.core.difference(o1,*sel,apply=False)
 		#res.select=True; # to be on the safe side...
 		return {'FINISHED'}  
 
@@ -331,9 +333,11 @@ class VIEW3D_OT_blenderscad_intersection(bpy.types.Operator):
 	def execute(self, context):
 		# we need the active object of selection separately as "main" object"
 		o1=context.active_object
-		o1.select=False
+		o1.select=False # removes o1 from objs list
 		sel=context.selected_objects
-		res=blenderscad.core.intersection(o1,*sel,apply=True)
+		if len(sel)<1 or o1 is None:			
+			return  {'FINISHED'}
+		res=blenderscad.core.intersection(o1,*sel,apply=False)
 		#res.select=True; # to be on the safe side...
 		return {'FINISHED'}  
 
@@ -345,7 +349,9 @@ class VIEW3D_OT_blenderscad_union(bpy.types.Operator):
 		o1=context.active_object
 		o1.select=False
 		sel=context.selected_objects
-		res=blenderscad.core.union(o1,*sel,apply=True)
+		if len(sel)<1 or o1 is None:			
+			return  {'FINISHED'}		
+		res=blenderscad.core.union(o1,*sel,apply=False)
 		#res.select=True; # to be on the safe side...
 		return {'FINISHED'}  
 
@@ -670,6 +676,9 @@ def unregister():
 # for faster testing of enable/disable addon:
 #bpy.ops.wm.addon_enable(module="blenderscad_toolbar")
 #bpy.ops.wm.addon_disable(module="blenderscad_toolbar")
+
+#bpy.ops.wm.addon_disable(module="blenderscad_toolbar"); bpy.ops.wm.addon_enable(module="blenderscad_toolbar"); 
+
 	
 if __name__ == "__main__":
 	register()
