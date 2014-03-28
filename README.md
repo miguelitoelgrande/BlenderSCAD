@@ -66,10 +66,10 @@ logodemo()
 
 <img src="imgs/Logo_BlenderSCAD.png">
 
+I've started developing BlenderSCAD on Blender 2.68/2.69. The most recent versions will be tested against 2.70 but may still work on older Blender releases.
+OS wise, I'm using Blender on Windows7 64bit, but also tested it on Ubuntu (well sideloaded on an Android tablet).
+
 <h2>Install Instructions</h2>
-(Update)
-BlenderSCAD currently relies on Blender 2.69 installed.
-I've developed it on Windows with Blender 64bit version, but also tested it on Ubuntu (well sideloaded on an Android tablet).
 
 Installing BlenderSCAD is fairly simple:
 Meanwhile, I've split the project into a python module <i>blenderscad</i>, default user prefs and startup files for the <i>config</i> folder and the BlenderSCAD panel to be placed in the <i>addons</i> folder.
@@ -82,6 +82,8 @@ Furthermore, there is a demo script <i>blenderscad_demo.py</i> and some more dem
 First, place the blenderscad directory in Blender's module path:
 <pre>
 [installpath]\blender-2.69\2.69\scripts\modules\blenderscad
+or
+[installpath]\blender-2.70\2.70\scripts\modules\blenderscad
 </pre>
 As an alternative, you can also set a path in the console or the demo script to the folder containing the modules.
 <br/>
@@ -92,6 +94,8 @@ These will provide my Blender Theme adjustments and screen area setup as shown i
 Place the content of the "config" folder into the Blender's config folder:
 <pre>
 %USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\config
+or
+%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.70\config
 </pre>
 if you are using Windows (Otherwise, refer to the Blender documentation).
 
@@ -100,6 +104,8 @@ Well, this exeeds the original scope of providing OpenSCAD like operations and i
 working with TinkerCAD. If you want to give it a try, install the addon and activate it in the user preferences:
 <pre>
 [installpath]\blender-2.69\2.69\scripts\addons\blenderscad_toolbar.py
+or
+[installpath]\blender-2.70\2.70\scripts\addons\blenderscad_toolbar.py
 </pre>
 
 <h4>Getting started</h4>

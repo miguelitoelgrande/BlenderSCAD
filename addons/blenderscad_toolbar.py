@@ -20,8 +20,8 @@
 bl_info = {
     "name": "BlenderSCAD toolbar",
     "author": "Michael Mlivoncic",
-    "version": (0, 0, 1),
-    "blender": (2, 69, 0),
+    "version": (0, 0, 2),
+    "blender": (2, 70, 0),
     "location": "Tools Panel",
     "description": "Proof of concept UI mod for Thinkercad/OpenSCAD like operations",
     "wiki_url": "https://github.com/miguelitoelgrande/BlenderSCAD",
