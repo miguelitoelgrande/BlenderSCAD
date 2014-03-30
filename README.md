@@ -7,13 +7,14 @@ Coming from OpenSCAD or Tinkercad, there are some issues at the first glance:
 <ul>
 <li>Revisiting and changing a model seems to be difficult - Joining meshes is less attractive than grouping/ungrouping objects
 <li>Undo functionality is not that advanced.
-<li>The parametric approach of OpenSCAD is very powerful and yet easy to learn. Blender's Python console is something you may not even be aware of.
-<li>Blender's UI is way too dark to provide this warm and welcome feeling of Tinkercad or OpenSCAD :-)
+<li>The parametric approach of OpenSCAD is very powerful and yet easy to learn. Blender's Python console is something you may not even be aware of and parameterizing your first objects with OpenSCAD is definitely much easier.
+<li>Blender's UI (i.e. the default theme)is way too dark to provide this warm and welcome feeling of Tinkercad or OpenSCAD :-)
 </ul>
  
-This is currently rather a proof of concept implementation as I'm just familiarizing myself with Blender and Python.
+This little project started as a proof of concept implementation as I'm just familiarizing myself with Blender and Python.
+Meanwhile it has matured quite a bit and is a really nice enhancement for Blender.
 <br/>
-However, my results are encouraging enough to share them:
+Here is a screenshot to show the basic idea:
 <img src="imgs/ScreenshotBlender.png">
 
 
