@@ -67,7 +67,7 @@ logodemo()
 
 <img src="imgs/Logo_BlenderSCAD.png">
 
-I've started developing BlenderSCAD on Blender 2.68/2.69. The most recent versions will be tested against 2.70 but may still work on older Blender releases.
+I've started developing BlenderSCAD on Blender 2.68/2.69. The current version works fine with Blender 2.68 to the recent 2.74 and may still work on older Blender releases (not tested, though).
 OS wise, I'm using Blender on Windows7 64bit, but also tested it on Ubuntu (well sideloaded on an Android tablet).
 
 <h2>Install Instructions</h2>
@@ -84,7 +84,7 @@ First, place the blenderscad directory in Blender's module path:
 <pre>
 [installpath]\blender-2.69\2.69\scripts\modules\blenderscad
 or
-[installpath]\blender-2.70\2.70\scripts\modules\blenderscad
+[installpath]\blender-2.74\2.74\scripts\modules\blenderscad
 </pre>
 As an alternative, you can also set a path in the console or the demo script to the folder containing the modules.
 <br/>
@@ -96,7 +96,7 @@ Place the content of the "config" folder into the Blender's config folder:
 <pre>
 %USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.69\config
 or
-%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.70\config
+%USERPROFILE%\AppData\Roaming\Blender Foundation\Blender\2.74\config
 </pre>
 if you are using Windows (Otherwise, refer to the Blender documentation).
 
@@ -106,7 +106,7 @@ working with TinkerCAD. If you want to give it a try, install the addon and acti
 <pre>
 [installpath]\blender-2.69\2.69\scripts\addons\blenderscad_toolbar.py
 or
-[installpath]\blender-2.70\2.70\scripts\addons\blenderscad_toolbar.py
+[installpath]\blender-2.74\2.74\scripts\addons\blenderscad_toolbar.py
 </pre>
 
 <h4>Getting started</h4>
