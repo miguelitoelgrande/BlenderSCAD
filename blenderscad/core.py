@@ -3,7 +3,7 @@
 #
 # by Michael Mlivoncic, 2013
 #
-
+# 2015/10: small fixes to reflect Blender 2.76 API changes
 
 ## OpenSCAD like Blender programming
 ## This is just a proof of concept implementation - Work in Progress.
@@ -77,6 +77,7 @@ def get_fragments_from_r(r, fn=None, fs=None, fa=None):
 # clearAllObjects(): empty whole scene, useful during development
 # It tries to really remove the objects, not only unlink, so the .blend files won't grow with the garbage.
 def clearAllObjects():	
+	bpy.ops.object.select_all()
 	if bpy.context.active_object is not None:
 		if bpy.context.active_object.mode is not 'OBJECT': 
 			bpy.ops.object.mode_set(mode = 'OBJECT')
@@ -207,9 +208,9 @@ def translate( v=(0.0,0.0,0.0), o=None):
 		
 # OpenSCAD: rotate(a = deg, v = [x, y, z]) { ... }
 # !!! "When a rotation is specified for multiple axes then the rotation is applied in the following order: x, y, z."
-# rotate(a=[0,180,0]) { ... }  # will rotate your object 180 degrees around the 'y' axis.
+# rotate(a=[0,180,0]) { ... }  # will rotate your object 180 degrees around the 'y' axis. When 'a' is an  array, then 'v' is ignored. 
 # rotate(a=45, v=[1,1,0]) { ... }  # The optional argument 'v' allows you to set an arbitrary axis about which the object will be rotated.
-#
+# 
 #TODO: fully implement  http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/The_OpenSCAD_Language#rotate
 # Rotation in Blender: http:#pymove3d.sudile.com/stationen/kc_objekt_rotation/rotation.html#eulerrotation
 # Rotates its child "a" degrees about the origin of the coordinate system or around an arbitrary axis. 
@@ -219,12 +220,14 @@ def translate( v=(0.0,0.0,0.0), o=None):
 
 def rotate( a=[0.0,0.0,0.0], v=[0,0,0], *args):
 	o = None
-	for arg in args: # look for object in args...	    
-		if type(arg) is  bpy_types.Object:
+	for arg in args: # look for object in args...			
+		if type(arg) ==  bpy_types.Object:			
 			o=arg
+	if o is None and type(v) ==  bpy_types.Object: # dirty hack.. object slipped unnamed into v			
+			o=v	
 	if type(a) == int or type(a) == float:    # support for single size value argument
 		a=[a*v[0],a*v[1],a*v[2]]		
-	#old code	
+	# 
 	if o is None:
 		o = bpy.context.object	
 	bpy.ops.object.select_all(action = 'DESELECT')
@@ -921,7 +924,10 @@ def hull(o1,*objs):
 	#	v.select = True
 		#print (v)
 	#bpy.ops.mesh.select_all(action='SELECT')
-	bpy.ops.mesh.convex_hull(use_existing_faces=False, delete_unused=True, join_triangles=True, limit=0.000001, make_holes=False)
+	# okay until 2.74
+	#bpy.ops.mesh.convex_hull(use_existing_faces=False, delete_unused=True, join_triangles=True, limit=0.000001, make_holes=False)
+	# 2.76:
+	bpy.ops.mesh.convex_hull(use_existing_faces=False, delete_unused=True, join_triangles=True, make_holes=False)	
 	# TODO: optimize params to keep shapes clean?
     #delete_unused (boolean, (optional)) – Delete Unused, Delete selected elements that are not used by the hull
     #use_existing_faces (boolean, (optional)) – Use Existing Faces, Skip hull triangles that are covered by a pre-existing face
